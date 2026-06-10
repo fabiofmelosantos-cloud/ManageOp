@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Calendar, Clock, ChevronDown, ChevronUp, Settings2 } from "lucide-react"
+import { Calendar, Clock, ChevronDown, ChevronUp, Settings2, PowerOff, AlertTriangle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -10,6 +10,14 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { EnhancedAdherenceCalculator } from "@/components/coordinator/enhanced-adherence-calculator"
 import { OperationalSummaryForm, initialOperationalFormData } from "@/components/coordinator/operational-summary-form"
 import type { OperationalFormData } from "@/components/coordinator/operational-summary-form"
@@ -49,6 +57,9 @@ export default function CoordinatorPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [configOpen, setConfigOpen] = useState(false)
   const [activeTab, setActiveTab] = useState("adherence")
+  const [endShiftOpen, setEndShiftOpen] = useState(false)
+  // Used to force-remount the stateful tab panels on shift finalization
+  const [sessionKey, setSessionKey] = useState(0)
 
   // Report data state
   const [manualEntries, setManualEntries] = useState<ManualAdherenceEntry[]>([])
@@ -147,6 +158,25 @@ export default function CoordinatorPage() {
     setNotificationSummary(summary)
   }, [])
 
+  // Finalize shift: the ONLY action that clears all coordinator data
+  const handleFinalizeShift = useCallback(() => {
+    setManualEntries([])
+    setAdherenceData({ entries: [], overallAdherence: 0 })
+    setSafetyQuality(undefined)
+    setCostDelivery(undefined)
+    setWorkforce(undefined)
+    setWorkforceDistribution([])
+    setLineStatuses([])
+    setNotificationSummary(undefined)
+    setOperationalFormData(initialOperationalFormData)
+    setOperationalSummary("")
+    setSapSummary("")
+    // Remount the children that hold their own internal state
+    setSessionKey((prev) => prev + 1)
+    setEndShiftOpen(false)
+    setActiveTab("adherence")
+  }, [])
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-4 sm:p-6">
@@ -174,6 +204,15 @@ export default function CoordinatorPage() {
               <Clock className="h-3 w-3 mr-1" />
               {new Date().toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}
             </Badge>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setEndShiftOpen(true)}
+              className="min-h-[40px] text-xs sm:text-sm"
+            >
+              <PowerOff className="h-4 w-4 mr-1.5" />
+              Finalizar Turno
+            </Button>
           </div>
         </div>
       </div>
@@ -269,7 +308,11 @@ export default function CoordinatorPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="adherence" className="space-y-4 mt-0">
+        <TabsContent
+          value="adherence"
+          forceMount
+          className="space-y-4 mt-0 data-[state=inactive]:hidden"
+        >
           <EnhancedAdherenceCalculator
             productionLines={productionLines}
             weeklyPlan={weeklyPlan}
@@ -281,8 +324,13 @@ export default function CoordinatorPage() {
           />
         </TabsContent>
 
-        <TabsContent value="lines" className="space-y-4 mt-0">
+        <TabsContent
+          value="lines"
+          forceMount
+          className="space-y-4 mt-0 data-[state=inactive]:hidden"
+        >
           <LinesDashboard
+            key={`lines-${sessionKey}`}
             productionLines={productionLines}
             products={products}
             selectedDate={selectedDate}
@@ -291,8 +339,13 @@ export default function CoordinatorPage() {
           />
         </TabsContent>
 
-        <TabsContent value="notify" className="space-y-4 mt-0">
+        <TabsContent
+          value="notify"
+          forceMount
+          className="space-y-4 mt-0 data-[state=inactive]:hidden"
+        >
           <NotificationSummaryPanel
+            key={`notify-${sessionKey}`}
             lineStatuses={lineStatuses}
             selectedDate={selectedDate}
             selectedShift={currentShift}
@@ -301,7 +354,11 @@ export default function CoordinatorPage() {
           />
         </TabsContent>
 
-        <TabsContent value="summary" className="space-y-4 mt-0">
+        <TabsContent
+          value="summary"
+          forceMount
+          className="space-y-4 mt-0 data-[state=inactive]:hidden"
+        >
           <OperationalSummaryForm
             date={selectedDate}
             shift={currentShift}
@@ -311,8 +368,13 @@ export default function CoordinatorPage() {
           />
         </TabsContent>
 
-        <TabsContent value="mod" className="space-y-4 mt-0">
+        <TabsContent
+          value="mod"
+          forceMount
+          className="space-y-4 mt-0 data-[state=inactive]:hidden"
+        >
           <WorkforceDistributionPanel
+            key={`mod-${sessionKey}`}
             workers={workers}
             productionLines={productionLines}
             schedules={schedules}
@@ -322,7 +384,11 @@ export default function CoordinatorPage() {
           />
         </TabsContent>
 
-        <TabsContent value="report" className="space-y-4 mt-0">
+        <TabsContent
+          value="report"
+          forceMount
+          className="space-y-4 mt-0 data-[state=inactive]:hidden"
+        >
           <FinalReportGenerator
             date={selectedDate}
             shift={currentShift}
@@ -338,6 +404,32 @@ export default function CoordinatorPage() {
           />
         </TabsContent>
       </Tabs>
+
+      {/* Finalize Shift Confirmation Dialog */}
+      <Dialog open={endShiftOpen} onOpenChange={setEndShiftOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Finalizar Turno
+            </DialogTitle>
+            <DialogDescription className="pt-2 text-pretty">
+              Esta acao vai limpar todos os dados preenchidos neste turno: aderencia, estado das
+              linhas, notificacoes, resumo operacional e distribuicao de MOD. Esta operacao nao pode
+              ser revertida. Garanta que ja exportou o relatorio final antes de continuar.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setEndShiftOpen(false)} className="min-h-[44px]">
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleFinalizeShift} className="min-h-[44px]">
+              <PowerOff className="h-4 w-4 mr-1.5" />
+              Confirmar e Limpar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Mobile Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-2 sm:hidden z-50">

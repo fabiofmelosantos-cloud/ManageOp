@@ -22,9 +22,11 @@ import { EnhancedAdherenceCalculator } from "@/components/coordinator/enhanced-a
 import { OperationalSummaryForm, initialOperationalFormData } from "@/components/coordinator/operational-summary-form"
 import type { OperationalFormData } from "@/components/coordinator/operational-summary-form"
 import { WorkforceDistributionPanel } from "@/components/coordinator/workforce-distribution-panel"
+import type { WorkforceDistributionItem } from "@/components/coordinator/workforce-distribution-panel"
 import { LinesDashboard } from "@/components/coordinator/lines-dashboard"
 import { FinalReportGenerator } from "@/components/coordinator/final-report-generator"
-import { NotificationSummaryPanel } from "@/components/coordinator/notification-summary-panel"
+import { NotificationSummaryPanel, DEFAULT_EXTRA_POSITIONS } from "@/components/coordinator/notification-summary-panel"
+import type { ExtraPosition } from "@/components/coordinator/notification-summary-panel"
 import { getProductionLines, getWorkers, getSchedules, loadWeeklyPlans, getWeeklyPlans, getProducts } from "@/lib/storage"
 import { loadProductionLines, loadWorkers, loadSchedules, loadProducts } from "@/lib/storage"
 import { getShiftLabel } from "@/lib/shift-utils"
@@ -71,7 +73,9 @@ export default function CoordinatorPage() {
   const [costDelivery, setCostDelivery] = useState<CostDeliveryRecord | undefined>()
   const [workforce, setWorkforce] = useState<WorkforceRecord | undefined>()
   const [workforceDistribution, setWorkforceDistribution] = useState<WorkforceDistribution[]>([])
+  const [distributionInitialized, setDistributionInitialized] = useState(false)
   const [lineStatuses, setLineStatuses] = useState<LineStatusEntry[]>([])
+  const [extraPositions, setExtraPositions] = useState<ExtraPosition[]>(DEFAULT_EXTRA_POSITIONS)
   const [notificationSummary, setNotificationSummary] = useState<NotificationSummary | undefined>()
   const [operationalFormData, setOperationalFormData] = useState<OperationalFormData>(initialOperationalFormData)
   const [operationalSummary, setOperationalSummary] = useState("")

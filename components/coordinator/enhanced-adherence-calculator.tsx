@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,6 +20,9 @@ import {
   Trash2,
   RefreshCw,
   Gauge,
+  Play,
+  Pause,
+  Square,
 } from "lucide-react"
 import type { ManualAdherenceEntry, AdherenceStatus, ProductionLine, WeeklyProductionPlan, ShiftType } from "@/lib/types"
 
@@ -28,7 +31,19 @@ interface EnhancedAdherenceCalculatorProps {
   weeklyPlan: WeeklyProductionPlan | null
   selectedDate: string
   selectedShift: ShiftType
+  manualEntries: ManualAdherenceEntry[]
+  onManualEntriesChange: (entries: ManualAdherenceEntry[]) => void
   onAdherenceUpdate?: (entries: ManualAdherenceEntry[], overallAdherence: number) => void
+}
+
+// Compute the live produced kg for a running entry.
+function getLiveProducedKg(entry: ManualAdherenceEntry, now: number): number {
+  if (entry.isRunning && entry.trackingStartTime && entry.lineRate > 0) {
+    const baseline = entry.baselineKg ?? 0
+    const elapsedHours = (now - new Date(entry.trackingStartTime).getTime()) / (1000 * 60 * 60)
+    return Math.max(0, baseline + entry.lineRate * elapsedHours)
+  }
+  return entry.producedKg
 }
 
 export function EnhancedAdherenceCalculator({
@@ -36,19 +51,59 @@ export function EnhancedAdherenceCalculator({
   weeklyPlan,
   selectedDate,
   selectedShift,
+  manualEntries,
+  onManualEntriesChange,
   onAdherenceUpdate,
 }: EnhancedAdherenceCalculatorProps) {
-  const [mode, setMode] = useState<"automatic" | "manual">("automatic")
-  const [manualEntries, setManualEntries] = useState<ManualAdherenceEntry[]>([])
-  const [currentTime, setCurrentTime] = useState(new Date().toISOString())
+  const [mode, setMode] = useState<"automatic" | "manual">("manual")
+  const [now, setNow] = useState(Date.now())
 
-  // Auto-refresh every minute
+  // Tick every second so running counters update in real time.
   useEffect(() => {
+    const hasRunning = manualEntries.some((e) => e.isRunning)
+    if (!hasRunning) return
     const interval = setInterval(() => {
-      setCurrentTime(new Date().toISOString())
-    }, 60000)
+      setNow(Date.now())
+    }, 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [manualEntries])
+
+  const calculateStatus = (produced: number, target: number): AdherenceStatus => {
+    if (target <= 0) return "on-track"
+    const percentage = (produced / target) * 100
+    if (percentage >= 85) return "on-track"
+    if (percentage >= 60) return "at-risk"
+    return "delayed"
+  }
+
+  const calculateEstimatedEnd = (remaining: number, rate: number, fromTime: number): string | undefined => {
+    if (rate <= 0 || remaining <= 0) return undefined
+    const hoursNeeded = remaining / rate
+    const end = new Date(fromTime + hoursNeeded * 60 * 60 * 1000)
+    return end.toISOString()
+  }
+
+  const calculateDeviation = (produced: number, target: number): number => {
+    if (target <= 0) return 0
+    return ((produced - target) / target) * 100
+  }
+
+  // Recompute derived fields for an entry given an authoritative producedKg.
+  const withDerivedFields = useCallback(
+    (entry: ManualAdherenceEntry, producedKg: number, currentNow: number): ManualAdherenceEntry => {
+      const remainingKg = Math.max(0, entry.targetKg - producedKg)
+      return {
+        ...entry,
+        producedKg,
+        remainingKg,
+        status: calculateStatus(producedKg, entry.targetKg),
+        estimatedEndTime: calculateEstimatedEnd(remainingKg, entry.lineRate, currentNow),
+        deviation: calculateDeviation(producedKg, entry.targetKg),
+        currentTime: new Date(currentNow).toISOString(),
+      }
+    },
+    [],
+  )
 
   // Get plan data for automatic mode
   const getPlanData = () => {
@@ -64,40 +119,16 @@ export function EnhancedAdherenceCalculator({
       .filter((e) => e.targetQuantity > 0)
       .map((entry) => {
         const line = productionLines.find((l) => l.id === entry.lineId)
-        const product = line?.requirements?.find((r) => r.productId === entry.productId)
-
         return {
           lineId: entry.lineId,
           lineName: line?.name || "Linha Desconhecida",
           productId: entry.productId,
-          productName: product ? "Produto" : "N/A",
           targetKg: entry.targetQuantity,
           lineRate: entry.lineCapacity || entry.kgPerHour || 0,
-          producedKg: 0, // Would come from tracking
+          producedKg: 0,
           remainingKg: entry.targetQuantity,
         }
       })
-  }
-
-  const calculateStatus = (produced: number, target: number, rate: number): AdherenceStatus => {
-    if (target <= 0) return "on-track"
-    const percentage = (produced / target) * 100
-    if (percentage >= 85) return "on-track"
-    if (percentage >= 60) return "at-risk"
-    return "delayed"
-  }
-
-  const calculateEstimatedEnd = (remaining: number, rate: number, startTime: string): string | undefined => {
-    if (rate <= 0 || remaining <= 0) return undefined
-    const hoursNeeded = remaining / rate
-    const start = new Date(startTime)
-    const end = new Date(start.getTime() + hoursNeeded * 60 * 60 * 1000)
-    return end.toISOString()
-  }
-
-  const calculateDeviation = (produced: number, target: number): number => {
-    if (target <= 0) return 0
-    return ((produced - target) / target) * 100
   }
 
   const addManualEntry = () => {
@@ -112,31 +143,101 @@ export function EnhancedAdherenceCalculator({
       lineRate: 0,
       targetKg: 0,
       status: "on-track",
+      isRunning: false,
+      baselineKg: 0,
     }
-    setManualEntries([...manualEntries, newEntry])
+    onManualEntriesChange([...manualEntries, newEntry])
   }
 
+  // Import lines from the loaded plan into manual entries (so the counter can start from plan data).
+  const importFromPlan = () => {
+    const planData = getPlanData()
+    if (planData.length === 0) return
+    const imported: ManualAdherenceEntry[] = planData.map((p) => ({
+      id: `entry_${Date.now()}_${p.lineId}`,
+      lineId: p.lineId,
+      lineName: p.lineName,
+      productId: p.productId || undefined,
+      producedKg: 0,
+      remainingKg: p.targetKg,
+      startTime: new Date().toISOString(),
+      currentTime: new Date().toISOString(),
+      lineRate: p.lineRate,
+      targetKg: p.targetKg,
+      status: "on-track",
+      isRunning: false,
+      baselineKg: 0,
+    }))
+    onManualEntriesChange([...manualEntries, ...imported])
+    setMode("manual")
+  }
+
+  // Update a manual field. If the entry is running, editing producedKg resets the baseline.
   const updateManualEntry = (id: string, updates: Partial<ManualAdherenceEntry>) => {
-    setManualEntries((prev) =>
-      prev.map((entry) => {
+    const currentNow = Date.now()
+    onManualEntriesChange(
+      manualEntries.map((entry) => {
         if (entry.id !== id) return entry
+        const merged = { ...entry, ...updates }
 
-        const updated = { ...entry, ...updates }
-        
-        // Recalculate derived fields
-        updated.remainingKg = Math.max(0, updated.targetKg - updated.producedKg)
-        updated.status = calculateStatus(updated.producedKg, updated.targetKg, updated.lineRate)
-        updated.estimatedEndTime = calculateEstimatedEnd(updated.remainingKg, updated.lineRate, updated.startTime)
-        updated.deviation = calculateDeviation(updated.producedKg, updated.targetKg)
-        updated.currentTime = new Date().toISOString()
+        // If running and the user manually changed producedKg, re-baseline so the live counter continues from there.
+        if (merged.isRunning && updates.producedKg !== undefined) {
+          merged.baselineKg = updates.producedKg
+          merged.trackingStartTime = new Date(currentNow).toISOString()
+        }
+        // If running and the rate changed, re-baseline at the current produced value so we don't jump.
+        if (merged.isRunning && updates.lineRate !== undefined && entry.trackingStartTime) {
+          const live = getLiveProducedKg(entry, currentNow)
+          merged.baselineKg = live
+          merged.trackingStartTime = new Date(currentNow).toISOString()
+        }
 
-        return updated
-      })
+        const authoritativeProduced = merged.isRunning ? getLiveProducedKg(merged, currentNow) : merged.producedKg
+        return withDerivedFields(merged, authoritativeProduced, currentNow)
+      }),
+    )
+  }
+
+  // Start the live counter for an entry.
+  const startTracking = (id: string) => {
+    const currentNow = Date.now()
+    onManualEntriesChange(
+      manualEntries.map((entry) => {
+        if (entry.id !== id) return entry
+        return {
+          ...entry,
+          isRunning: true,
+          baselineKg: entry.producedKg, // continue from whatever is already produced
+          trackingStartTime: new Date(currentNow).toISOString(),
+          startTime: entry.startTime || new Date(currentNow).toISOString(),
+          currentTime: new Date(currentNow).toISOString(),
+        }
+      }),
+    )
+    setNow(currentNow)
+  }
+
+  // Pause/stop the live counter and freeze the accumulated value (becomes editable).
+  const stopTracking = (id: string) => {
+    const currentNow = Date.now()
+    onManualEntriesChange(
+      manualEntries.map((entry) => {
+        if (entry.id !== id) return entry
+        const frozen = getLiveProducedKg(entry, currentNow)
+        const stopped = {
+          ...entry,
+          isRunning: false,
+          producedKg: Math.round(frozen),
+          baselineKg: Math.round(frozen),
+          trackingStartTime: undefined,
+        }
+        return withDerivedFields(stopped, stopped.producedKg, currentNow)
+      }),
     )
   }
 
   const removeManualEntry = (id: string) => {
-    setManualEntries((prev) => prev.filter((e) => e.id !== id))
+    onManualEntriesChange(manualEntries.filter((e) => e.id !== id))
   }
 
   const getStatusBadge = (status: AdherenceStatus) => {
@@ -176,27 +277,32 @@ export function EnhancedAdherenceCalculator({
     }
   }
 
-  const calculateOverallAdherence = () => {
-    const entries = mode === "automatic" ? getPlanData() : manualEntries
-    if (entries.length === 0) return 0
+  const automaticEntries = getPlanData()
 
+  // Build display entries for manual mode with live produced values applied.
+  const displayEntries = manualEntries.map((entry) => {
+    const liveProduced = getLiveProducedKg(entry, now)
+    return withDerivedFields(entry, liveProduced, now)
+  })
+
+  const calculateOverallAdherence = () => {
+    const entries = mode === "automatic" ? automaticEntries : displayEntries
+    if (entries.length === 0) return 0
     const totalTarget = entries.reduce((sum, e) => sum + (e.targetKg || 0), 0)
     const totalProduced = entries.reduce((sum, e) => sum + (e.producedKg || 0), 0)
-
     if (totalTarget === 0) return 0
     return (totalProduced / totalTarget) * 100
   }
 
   const overallAdherence = calculateOverallAdherence()
 
-  // Notify parent of changes
+  // Notify parent of changes (use displayEntries so live values propagate).
   useEffect(() => {
     if (onAdherenceUpdate) {
-      onAdherenceUpdate(manualEntries, overallAdherence)
+      onAdherenceUpdate(displayEntries, overallAdherence)
     }
-  }, [manualEntries, overallAdherence, onAdherenceUpdate])
-
-  const automaticEntries = getPlanData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [now, manualEntries, mode])
 
   return (
     <Card className="border-l-4 border-l-blue-500">
@@ -209,9 +315,9 @@ export function EnhancedAdherenceCalculator({
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-xs">
               <Clock className="h-3 w-3 mr-1" />
-              {new Date(currentTime).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}
+              {new Date(now).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
             </Badge>
-            <Button variant="ghost" size="sm" onClick={() => setCurrentTime(new Date().toISOString())}>
+            <Button variant="ghost" size="sm" onClick={() => setNow(Date.now())}>
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
@@ -260,11 +366,11 @@ export function EnhancedAdherenceCalculator({
           <TabsList className="grid w-full grid-cols-2 h-12">
             <TabsTrigger value="automatic" className="text-sm min-h-[44px]">
               <Calculator className="h-4 w-4 mr-2" />
-              Automatico
+              Plano
             </TabsTrigger>
             <TabsTrigger value="manual" className="text-sm min-h-[44px]">
               <Target className="h-4 w-4 mr-2" />
-              Manual
+              Contagem
             </TabsTrigger>
           </TabsList>
 
@@ -273,20 +379,24 @@ export function EnhancedAdherenceCalculator({
               <div className="text-center py-8 text-muted-foreground">
                 <Calculator className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p>Sem plano carregado para este turno.</p>
-                <p className="text-sm">Configure o plano semanal ou use o modo manual.</p>
+                <p className="text-sm">Configure o plano semanal ou use o modo contagem.</p>
               </div>
             ) : (
               <div className="space-y-3">
+                <Button onClick={importFromPlan} className="w-full min-h-[48px]" variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Importar Linhas do Plano para Contagem
+                </Button>
                 {automaticEntries.map((entry, index) => (
                   <div
                     key={index}
                     className={`p-3 rounded-lg border-l-4 ${getStatusColor(
-                      calculateStatus(entry.producedKg, entry.targetKg, entry.lineRate)
+                      calculateStatus(entry.producedKg, entry.targetKg),
                     )}`}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-semibold text-sm">{entry.lineName}</span>
-                      {getStatusBadge(calculateStatus(entry.producedKg, entry.targetKg, entry.lineRate))}
+                      {getStatusBadge(calculateStatus(entry.producedKg, entry.targetKg))}
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                       <div>
@@ -294,8 +404,8 @@ export function EnhancedAdherenceCalculator({
                         <p className="font-semibold">{entry.targetKg} kg</p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground">Produzido</p>
-                        <p className="font-semibold">{entry.producedKg} kg</p>
+                        <p className="text-muted-foreground">Debito</p>
+                        <p className="font-semibold">{entry.lineRate} kg/h</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Falta</p>
@@ -320,28 +430,22 @@ export function EnhancedAdherenceCalculator({
               Adicionar Linha
             </Button>
 
-            {manualEntries.length === 0 ? (
+            {displayEntries.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Target className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>Sem entradas manuais.</p>
-                <p className="text-sm">Clique em &quot;Adicionar Linha&quot; para comecar.</p>
+                <p>Sem entradas de contagem.</p>
+                <p className="text-sm">Adicione uma linha ou importe do plano para iniciar a contagem em tempo real.</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {manualEntries.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className={`p-4 rounded-lg border-l-4 space-y-3 ${getStatusColor(entry.status)}`}
-                  >
-                    <div className="flex items-center justify-between">
+                {displayEntries.map((entry) => (
+                  <div key={entry.id} className={`p-4 rounded-lg border-l-4 space-y-3 ${getStatusColor(entry.status)}`}>
+                    <div className="flex items-center justify-between flex-wrap gap-2">
                       <Select
                         value={entry.lineId}
                         onValueChange={(value) => {
                           const line = productionLines.find((l) => l.id === value)
-                          updateManualEntry(entry.id, {
-                            lineId: value,
-                            lineName: line?.name || "",
-                          })
+                          updateManualEntry(entry.id, { lineId: value, lineName: line?.name || "" })
                         }}
                       >
                         <SelectTrigger className="w-[180px] min-h-[44px]">
@@ -356,6 +460,12 @@ export function EnhancedAdherenceCalculator({
                         </SelectContent>
                       </Select>
                       <div className="flex items-center gap-2">
+                        {entry.isRunning && (
+                          <Badge className="bg-blue-600 text-white animate-pulse">
+                            <Play className="h-3 w-3 mr-1" />
+                            A contar
+                          </Badge>
+                        )}
                         {getStatusBadge(entry.status)}
                         <Button
                           variant="ghost"
@@ -368,14 +478,49 @@ export function EnhancedAdherenceCalculator({
                       </div>
                     </div>
 
+                    {/* Start / Pause controls */}
+                    <div className="flex gap-2">
+                      {entry.isRunning ? (
+                        <Button
+                          onClick={() => stopTracking(entry.id)}
+                          className="flex-1 min-h-[48px] bg-amber-600 hover:bg-amber-700 text-white"
+                        >
+                          <Pause className="h-4 w-4 mr-2" />
+                          Parar Contagem
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => startTracking(entry.id)}
+                          disabled={entry.lineRate <= 0}
+                          className="flex-1 min-h-[48px] bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
+                        >
+                          <Play className="h-4 w-4 mr-2" />
+                          Iniciar Contagem
+                        </Button>
+                      )}
+                      {!entry.isRunning && entry.producedKg > 0 && (
+                        <Button
+                          variant="outline"
+                          onClick={() => updateManualEntry(entry.id, { producedKg: 0, baselineKg: 0 })}
+                          className="min-h-[48px]"
+                        >
+                          <Square className="h-4 w-4 mr-2" />
+                          Repor
+                        </Button>
+                      )}
+                    </div>
+
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       <div className="space-y-1.5">
-                        <Label className="text-xs">Kg Produzidos</Label>
+                        <Label className="text-xs flex items-center gap-1">
+                          Kg Produzidos
+                          {entry.isRunning && <span className="text-[10px] text-blue-600">(auto)</span>}
+                        </Label>
                         <Input
                           type="number"
-                          value={entry.producedKg || ""}
+                          value={entry.isRunning ? Math.round(entry.producedKg) : entry.producedKg || ""}
                           onChange={(e) => updateManualEntry(entry.id, { producedKg: Number(e.target.value) })}
-                          className="min-h-[44px]"
+                          className={`min-h-[44px] ${entry.isRunning ? "border-blue-400 font-semibold" : ""}`}
                           placeholder="0"
                         />
                       </div>
@@ -403,11 +548,18 @@ export function EnhancedAdherenceCalculator({
                         <Label className="text-xs">Hora Inicio</Label>
                         <Input
                           type="time"
-                          value={entry.startTime ? new Date(entry.startTime).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" }) : ""}
+                          value={
+                            entry.startTime
+                              ? new Date(entry.startTime).toLocaleTimeString("pt-PT", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : ""
+                          }
                           onChange={(e) => {
                             const [hours, minutes] = e.target.value.split(":")
                             const date = new Date(selectedDate)
-                            date.setHours(parseInt(hours), parseInt(minutes))
+                            date.setHours(Number.parseInt(hours), Number.parseInt(minutes))
                             updateManualEntry(entry.id, { startTime: date.toISOString() })
                           }}
                           className="min-h-[44px]"
@@ -444,8 +596,8 @@ export function EnhancedAdherenceCalculator({
                             entry.status === "on-track"
                               ? "bg-green-500"
                               : entry.status === "at-risk"
-                              ? "bg-yellow-500"
-                              : "bg-red-500"
+                                ? "bg-yellow-500"
+                                : "bg-red-500"
                           }`}
                           style={{
                             width: `${Math.min(entry.targetKg > 0 ? (entry.producedKg / entry.targetKg) * 100 : 0, 100)}%`,
@@ -457,11 +609,7 @@ export function EnhancedAdherenceCalculator({
                     {entry.deviation !== undefined && Math.abs(entry.deviation) > 0 && (
                       <div className="flex items-center gap-2 text-xs">
                         <span className="text-muted-foreground">Desvio:</span>
-                        <span
-                          className={`font-semibold ${
-                            entry.deviation >= 0 ? "text-green-600" : "text-red-600"
-                          }`}
-                        >
+                        <span className={`font-semibold ${entry.deviation >= 0 ? "text-green-600" : "text-red-600"}`}>
                           {entry.deviation >= 0 ? "+" : ""}
                           {entry.deviation.toFixed(1)}%
                         </span>

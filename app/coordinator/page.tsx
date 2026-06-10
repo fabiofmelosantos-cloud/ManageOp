@@ -51,6 +51,7 @@ export default function CoordinatorPage() {
   const [activeTab, setActiveTab] = useState("adherence")
 
   // Report data state
+  const [manualEntries, setManualEntries] = useState<ManualAdherenceEntry[]>([])
   const [adherenceData, setAdherenceData] = useState<{
     entries: ManualAdherenceEntry[]
     overallAdherence: number
@@ -103,6 +104,10 @@ export default function CoordinatorPage() {
     } else {
       setCurrentShift("night")
     }
+  }, [])
+
+  const handleManualEntriesChange = useCallback((entries: ManualAdherenceEntry[]) => {
+    setManualEntries(entries)
   }, [])
 
   const handleAdherenceUpdate = useCallback((entries: ManualAdherenceEntry[], overallAdherence: number) => {
@@ -270,6 +275,8 @@ export default function CoordinatorPage() {
             weeklyPlan={weeklyPlan}
             selectedDate={selectedDate}
             selectedShift={currentShift}
+            manualEntries={manualEntries}
+            onManualEntriesChange={handleManualEntriesChange}
             onAdherenceUpdate={handleAdherenceUpdate}
           />
         </TabsContent>

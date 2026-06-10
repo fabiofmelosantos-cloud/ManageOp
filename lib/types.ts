@@ -245,6 +245,10 @@ export interface ManualAdherenceEntry {
   status: AdherenceStatus
   estimatedEndTime?: string
   deviation?: number // percentage
+  // Real-time tracking
+  isRunning?: boolean // whether the live counter is active
+  trackingStartTime?: string // timestamp when the current run segment started
+  baselineKg?: number // producedKg recorded at the start of the current run segment
 }
 
 export interface SafetyQualityRecord {

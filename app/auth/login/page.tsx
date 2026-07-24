@@ -9,13 +9,9 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Factory } from "lucide-react"
 
-const ADMIN_CREDENTIALS = {
-  email: "admin",
-  password: "XPTO48RX3",
-}
+const ACCESS_PASSWORD = "XPTO48RX3"
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -26,16 +22,15 @@ export default function LoginPage() {
     setIsLoading(true)
     setError(null)
 
-    const cleanEmail = email.trim().toLowerCase()
     const cleanPassword = password.trim()
 
-    if (cleanEmail === ADMIN_CREDENTIALS.email && cleanPassword === ADMIN_CREDENTIALS.password) {
+    if (cleanPassword === ACCESS_PASSWORD) {
       try {
         const userProfile = {
           name: "Administrador",
           employeeId: "admin",
           role: "admin",
-          email: cleanEmail,
+          email: "admin",
         }
 
         localStorage.setItem("user", JSON.stringify(userProfile))
@@ -83,24 +78,13 @@ export default function LoginPage() {
             <CardContent>
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Utilizador</Label>
-                  <Input
-                    id="email"
-                    type="text"
-                    placeholder="admin"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="bg-secondary/50"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Senha</Label>
+                  <Label htmlFor="password">Senha de Acesso</Label>
                   <Input
                     id="password"
                     type="password"
                     placeholder="••••••"
                     required
+                    autoFocus
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="bg-secondary/50"

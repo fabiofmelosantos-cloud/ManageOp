@@ -11,7 +11,7 @@ import { Factory } from "lucide-react"
 
 const ADMIN_CREDENTIALS = {
   email: "admin",
-  password: "admin321",
+  password: "XPTO48RX3",
 }
 
 export default function LoginPage() {
@@ -109,11 +109,6 @@ export default function LoginPage() {
                 </Button>
               </form>
 
-              <div className="mt-4 p-3 rounded-md bg-muted/50 text-xs text-muted-foreground">
-                <p className="font-medium mb-1">Credenciais:</p>
-                <p>Utilizador: admin</p>
-                <p>Senha: admin321</p>
-              </div>
             </CardContent>
           </Card>
 

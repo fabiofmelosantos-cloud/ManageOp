@@ -3,7 +3,7 @@
 import type React from "react"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Factory, CalendarIcon } from "lucide-react"
 import { NavigationSidebar } from "./navigation-sidebar"
@@ -37,6 +37,11 @@ export function DateProvider({ children }: { children: React.ReactNode }) {
 export function AppHeader() {
   const { selectedDate, setSelectedDate } = useDateContext()
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <header className="border-b border-border/50 sticky top-0 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 z-50 shadow-sm">
@@ -58,7 +63,7 @@ export function AppHeader() {
               <Button variant="outline" size="default" className="h-9 sm:h-10 px-3 gap-2 bg-transparent">
                 <CalendarIcon className="h-4 w-4" />
                 <span className="hidden sm:inline text-sm">
-                  {selectedDate ? format(selectedDate, "dd MMM", { locale: pt }) : "Selecionar"}
+                  {mounted && selectedDate ? format(selectedDate, "dd MMM", { locale: pt }) : "Selecionar"}
                 </span>
               </Button>
             </PopoverTrigger>

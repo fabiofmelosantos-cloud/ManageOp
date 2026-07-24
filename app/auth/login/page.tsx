@@ -5,15 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Factory } from "lucide-react"
 
-const ADMIN_EMPLOYEE_ID = "11111"
+const ACCESS_PASSWORD = "231342128"
 
 export default function LoginPage() {
-  const [employeeId, setEmployeeId] = useState("")
+  const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
@@ -23,60 +22,22 @@ export default function LoginPage() {
     setIsLoading(true)
     setError(null)
 
-    // Verificar primeiro se é o admin
-    if (employeeId === ADMIN_EMPLOYEE_ID) {
-      try {
-        const userProfile = {
-          name: "Administrador",
-          employeeId: "11111",
-          role: "admin",
-          email: "admin@sistema.local",
-        }
-
-        localStorage.setItem("user", JSON.stringify(userProfile))
-        
-        // Disparar evento para notificar o AuthContext
-        window.dispatchEvent(new Event("userChanged"))
-
-        setTimeout(() => {
-          router.push("/")
-          router.refresh()
-        }, 100)
-        return
-      } catch (err) {
-        console.error("Erro ao fazer login:", err)
-        setError("Erro ao iniciar sessão. Tente novamente.")
-        setIsLoading(false)
-        return
-      }
+    if (password !== ACCESS_PASSWORD) {
+      setError("Palavra-passe incorreta.")
+      setIsLoading(false)
+      return
     }
 
-    // Tentar login com utilizador registado
     try {
-      const response = await fetch("/api/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "login",
-          employeeId,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Número de colaborador inválido")
-      }
-
       const userProfile = {
-        name: data.user.name,
-        employeeId: data.user.employeeId,
-        role: data.user.role,
-        email: data.user.email || `${data.user.employeeId}@sistema.local`,
+        name: "Administrador",
+        employeeId: "11111",
+        role: "admin",
+        email: "admin@sistema.local",
       }
 
       localStorage.setItem("user", JSON.stringify(userProfile))
-      
+
       // Disparar evento para notificar o AuthContext
       window.dispatchEvent(new Event("userChanged"))
 
@@ -86,7 +47,7 @@ export default function LoginPage() {
       }, 100)
     } catch (err) {
       console.error("Erro ao fazer login:", err)
-      setError(err instanceof Error ? err.message : "Número de colaborador inválido")
+      setError("Erro ao iniciar sessão. Tente novamente.")
       setIsLoading(false)
     }
   }
@@ -106,37 +67,28 @@ export default function LoginPage() {
           <Card className="border-border/50">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl font-bold">Entrar</CardTitle>
-              <CardDescription>Insira o seu número de colaborador para aceder ao sistema</CardDescription>
+              <CardDescription>Insira a palavra-passe de acesso ao sistema</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="employeeId">Número de Colaborador</Label>
+                  <Label htmlFor="password">Palavra-passe</Label>
                   <Input
-                    id="employeeId"
-                    type="text"
-                    placeholder="Ex: 12345"
+                    id="password"
+                    type="password"
+                    placeholder="Introduza a palavra-passe"
                     required
-                    value={employeeId}
-                    onChange={(e) => setEmployeeId(e.target.value)}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     className="bg-secondary/50"
+                    autoComplete="current-password"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    O número de colaborador serve como credencial de acesso
-                  </p>
                 </div>
                 {error && <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "A entrar..." : "Entrar"}
                 </Button>
               </form>
-
-              <div className="mt-4 text-center text-sm text-muted-foreground">
-                Ainda não tem conta?{" "}
-                <Link href="/auth/register" className="text-primary hover:underline">
-                  Criar conta
-                </Link>
-              </div>
             </CardContent>
           </Card>
 

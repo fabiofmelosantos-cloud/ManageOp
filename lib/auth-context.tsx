@@ -2,11 +2,9 @@
 
 import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
+import type { User } from "@supabase/supabase-js"
 import { useRouter } from "next/navigation"
-
-interface User {
-  email: string
-}
 
 interface UserProfile {
   name: string
@@ -34,8 +32,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+  const supabase = createClient()
 
-  // Agora carrega usuário apenas uma vez no mount
+  // Carrega utilizador e escuta mudanças no localStorage
   useEffect(() => {
     const loadUser = () => {
       try {
@@ -50,16 +49,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const profile = JSON.parse(storedUser)
           setUserProfile(profile)
           setUser({ email: profile.email } as User)
+        } else {
+          setUserProfile(null)
+          setUser(null)
         }
       } catch (error) {
-        console.error("[v0] Erro ao carregar usuário:", error)
+        console.error("Erro ao carregar utilizador:", error)
+        setUserProfile(null)
+        setUser(null)
       } finally {
         setIsLoading(false)
       }
     }
 
     loadUser()
-  }, []) // Array de dependências vazio - executa apenas uma vez
+
+    // Escutar mudanças no localStorage (de outras tabs ou do mesmo contexto)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "user") {
+        loadUser()
+      }
+    }
+
+    // Escutar evento customizado para mudanças na mesma tab
+    const handleUserChange = () => {
+      loadUser()
+    }
+
+    window.addEventListener("storage", handleStorageChange)
+    window.addEventListener("userChanged", handleUserChange)
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange)
+      window.removeEventListener("userChanged", handleUserChange)
+    }
+  }, [])
 
   const signOut = async () => {
     localStorage.removeItem("user")

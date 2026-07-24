@@ -204,11 +204,7 @@ export default function ProductionPlanPage() {
                 {viewingPlan && (
                   <WeeklyPlanGrid
                     plan={viewingPlan}
-                    productionLines={
-                      viewingPlan.visibleLineIds
-                        ? productionLines.filter((l) => viewingPlan.visibleLineIds!.includes(l.id))
-                        : productionLines
-                    }
+                    productionLines={productionLines}
                     products={products}
                     readOnly
                     shiftFilter={selectedShift}

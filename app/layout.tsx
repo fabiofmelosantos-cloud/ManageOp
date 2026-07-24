@@ -39,7 +39,7 @@ export default function RootLayout({
             </ProtectedWrapper>
           </DateProvider>
         </AuthProvider>
-</body>
+      </body>
     </html>
   )
 }

@@ -5,15 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Factory } from "lucide-react"
 
-const ADMIN_EMPLOYEE_ID = "11111"
+const ACCESS_PASSWORD = "XPTO48RX3"
 
 export default function LoginPage() {
-  const [employeeId, setEmployeeId] = useState("")
+  const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
@@ -23,70 +22,38 @@ export default function LoginPage() {
     setIsLoading(true)
     setError(null)
 
-    // Verificar primeiro se é o admin
-    if (employeeId === ADMIN_EMPLOYEE_ID) {
+    const cleanPassword = password.trim()
+
+    if (cleanPassword === ACCESS_PASSWORD) {
       try {
         const userProfile = {
           name: "Administrador",
-          employeeId: "11111",
+          employeeId: "admin",
           role: "admin",
-          email: "admin@sistema.local",
+          email: "admin",
         }
 
         localStorage.setItem("user", JSON.stringify(userProfile))
-        
-        // Disparar evento para notificar o AuthContext
-        window.dispatchEvent(new Event("userChanged"))
+
+        const saved = localStorage.getItem("user")
+
+        if (!saved) {
+          setError("Erro ao salvar sessão. Verifique as permissões do navegador.")
+          setIsLoading(false)
+          return
+        }
 
         setTimeout(() => {
           router.push("/")
           router.refresh()
         }, 100)
-        return
-      } catch (err) {
-        console.error("Erro ao fazer login:", err)
+      } catch (error) {
+        console.error("Erro ao fazer login:", error)
         setError("Erro ao iniciar sessão. Tente novamente.")
         setIsLoading(false)
-        return
       }
-    }
-
-    // Tentar login com utilizador registado
-    try {
-      const response = await fetch("/api/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "login",
-          employeeId,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Número de colaborador inválido")
-      }
-
-      const userProfile = {
-        name: data.user.name,
-        employeeId: data.user.employeeId,
-        role: data.user.role,
-        email: data.user.email || `${data.user.employeeId}@sistema.local`,
-      }
-
-      localStorage.setItem("user", JSON.stringify(userProfile))
-      
-      // Disparar evento para notificar o AuthContext
-      window.dispatchEvent(new Event("userChanged"))
-
-      setTimeout(() => {
-        router.push("/")
-        router.refresh()
-      }, 100)
-    } catch (err) {
-      console.error("Erro ao fazer login:", err)
-      setError(err instanceof Error ? err.message : "Número de colaborador inválido")
+    } else {
+      setError("Credenciais inválidas")
       setIsLoading(false)
     }
   }
@@ -106,42 +73,34 @@ export default function LoginPage() {
           <Card className="border-border/50">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl font-bold">Entrar</CardTitle>
-              <CardDescription>Insira o seu número de colaborador para aceder ao sistema</CardDescription>
+              <CardDescription>Insira suas credenciais para acessar o sistema</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="employeeId">Número de Colaborador</Label>
+                  <Label htmlFor="password">Senha de Acesso</Label>
                   <Input
-                    id="employeeId"
-                    type="text"
-                    placeholder="Ex: 12345"
+                    id="password"
+                    type="password"
+                    placeholder="••••••"
                     required
-                    value={employeeId}
-                    onChange={(e) => setEmployeeId(e.target.value)}
+                    autoFocus
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     className="bg-secondary/50"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    O número de colaborador serve como credencial de acesso
-                  </p>
                 </div>
                 {error && <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "A entrar..." : "Entrar"}
+                  {isLoading ? "Entrando..." : "Entrar"}
                 </Button>
               </form>
 
-              <div className="mt-4 text-center text-sm text-muted-foreground">
-                Ainda não tem conta?{" "}
-                <Link href="/auth/register" className="text-primary hover:underline">
-                  Criar conta
-                </Link>
-              </div>
             </CardContent>
           </Card>
 
           <p className="text-center text-xs text-muted-foreground">
-            Ao continuar, concorda com os nossos Termos e Política de Privacidade
+            Ao continuar, você concorda com nossos Termos e Política de Privacidade
           </p>
         </div>
       </div>

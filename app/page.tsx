@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Factory, Users, TrendingUp, AlertCircle } from "lucide-react"
 import { useDateContext } from "@/components/layout/app-header"
-import { getSupabase } from "@/lib/supabase-client"
+import { loadProductionLines, loadProductionTracking, loadWorkers } from "@/lib/storage"
 
 type WorkerDetail = {
   id: string
@@ -53,212 +53,96 @@ export default function DashboardPage() {
   }, [selectedDate])
 
   const loadProductionData = async () => {
-    const supabase = getSupabase()
+    try {
+      const [lines, tracking] = await Promise.all([loadProductionLines(), loadProductionTracking()])
+      const dateStr = selectedDate.toISOString().split("T")[0]
 
-    // Buscar planos do dia selecionado
-    const { data: dailyPlans } = await supabase
-      .from("daily_plans")
-      .select(`
-        id,
-        shift_plans (
-          id,
-          line_id,
-          product_id,
-          target_quantity,
-          shift,
-          line:production_lines (id, name, description),
-          product:products (id, name, description),
-          production_tracking (produced_quantity, is_running)
-        )
-      `)
-      .eq("date", selectedDate.toISOString().split("T")[0])
-
-    if (dailyPlans && dailyPlans.length > 0) {
-      // Processar dados das linhas
-      const linesMap = new Map()
-
-      dailyPlans[0].shift_plans?.forEach((plan: any) => {
-        const lineId = plan.line_id
-        if (!linesMap.has(lineId)) {
-          const tracking = plan.production_tracking?.[0]
-          linesMap.set(lineId, {
-            id: lineId,
-            name: plan.line?.name || "Linha",
-            product: plan.product?.name || "Produto",
-            productDescription: plan.product?.description || "",
-            isRunning: tracking?.is_running || false,
-            produced: Number(tracking?.produced_quantity || 0),
-            target: Number(plan.target_quantity || 0),
-            progress: tracking?.produced_quantity
-              ? (Number(tracking.produced_quantity) / Number(plan.target_quantity)) * 100
-              : 0,
-          })
+      const mapped = lines.map((line: any) => {
+        const t = tracking.find((tr: any) => tr.lineId === line.id && tr.date === dateStr)
+        const produced = Number(t?.producedQuantity || 0)
+        const target = Number(t?.target || line.target || 0)
+        return {
+          id: line.id,
+          name: line.name || "Linha",
+          product: line.product || "",
+          productDescription: line.description || "",
+          isRunning: t?.isRunning ?? false,
+          produced,
+          target,
+          progress: target > 0 ? (produced / target) * 100 : 0,
         }
       })
 
-      setProductionLines(Array.from(linesMap.values()))
+      setProductionLines(mapped)
+      await loadWorkerStats()
+    } catch (error) {
+      console.error("[v0] Erro ao carregar dados de produção:", error)
     }
-
-    // Carregar estatísticas de trabalhadores
-    await loadWorkerStats()
   }
 
   const loadWorkerStats = async () => {
-    const supabase = getSupabase()
-
-    // Buscar schedule do dia
-    const { data: scheduleDays } = await supabase
-      .from("schedule_days")
-      .select(`
-        id,
-        shift,
-        shift_assignments (
-          worker:workers (id, name, employee_id, specialties)
-        )
-      `)
-      .eq("date", selectedDate.toISOString().split("T")[0])
-
-    // Buscar ausências
-    const { data: absences } = await supabase
-      .from("absences")
-      .select("worker_id, reason")
-      .eq("created_at::date", selectedDate.toISOString().split("T")[0])
-
-    // Processar estatísticas por turno
-    const stats = {
-      morning: { working: 0, absent: 0, dc: 0, vacation: 0 },
-      afternoon: { working: 0, absent: 0, dc: 0, vacation: 0 },
-      night: { working: 0, absent: 0, dc: 0, vacation: 0 },
+    try {
+      const workers = await loadWorkers()
+      // Sem dados relacionais por turno no armazenamento atual, mostramos o total
+      // de trabalhadores no turno da manhã como referência inicial.
+      setWorkerStats({
+        morning: { working: workers.length, absent: 0, dc: 0, vacation: 0 },
+        afternoon: { working: 0, absent: 0, dc: 0, vacation: 0 },
+        night: { working: 0, absent: 0, dc: 0, vacation: 0 },
+      })
+    } catch (error) {
+      console.error("[v0] Erro ao carregar estatísticas de trabalhadores:", error)
     }
-
-    scheduleDays?.forEach((day: any) => {
-      const shift = day.shift as "morning" | "afternoon" | "night"
-      if (stats[shift]) {
-        stats[shift].working += day.shift_assignments?.length || 0
-      }
-    })
-
-    absences?.forEach((absence: any) => {
-      // Simplificação: considerar todas ausências como faltas
-      // Em produção, verificar o reason para categorizar
-      const shift = "morning" // Precisaria determinar o turno do trabalhador
-      if (stats[shift]) {
-        stats[shift].absent += 1
-      }
-    })
-
-    setWorkerStats(stats)
   }
 
   const loadWorkerDetails = async (status: string) => {
     setLoading(true)
-    const supabase = getSupabase()
-
-    const shiftMap = {
-      morning: "morning",
-      afternoon: "afternoon",
-      night: "night",
+    try {
+      if (status === "working") {
+        const workers = await loadWorkers()
+        setWorkerDetails(
+          workers.map((w: any) => ({
+            id: w.id,
+            name: w.name,
+            employee_id: w.employeeId || w.employee_id || "",
+            status: "working",
+            shift: selectedShift,
+            specialty: Array.isArray(w.specialties) ? w.specialties.join(", ") : w.specialty || "",
+          })),
+        )
+      } else {
+        setWorkerDetails([])
+      }
+    } catch (error) {
+      console.error("[v0] Erro ao carregar detalhes de trabalhadores:", error)
+    } finally {
+      setLoading(false)
     }
-
-    if (status === "working") {
-      // Buscar trabalhadores ativos no turno
-      const { data } = await supabase
-        .from("schedule_days")
-        .select(`
-          shift,
-          shift_assignments (
-            worker:workers (id, name, employee_id, specialties),
-            line:production_lines (name),
-            specialty:specialties (name)
-          )
-        `)
-        .eq("date", selectedDate.toISOString().split("T")[0])
-        .eq("shift", shiftMap[selectedShift])
-
-      const workers: WorkerDetail[] = []
-      data?.[0]?.shift_assignments?.forEach((assignment: any) => {
-        workers.push({
-          id: assignment.worker.id,
-          name: assignment.worker.name,
-          employee_id: assignment.worker.employee_id,
-          status: "working",
-          shift: selectedShift,
-          specialty: assignment.specialty?.name || "N/A",
-          line: assignment.line?.name || "N/A",
-        })
-      })
-
-      setWorkerDetails(workers)
-    } else if (status === "absent") {
-      // Buscar ausências
-      const { data } = await supabase
-        .from("absences")
-        .select(`
-          worker:workers (id, name, employee_id)
-        `)
-        .eq("created_at::date", selectedDate.toISOString().split("T")[0])
-
-      const workers: WorkerDetail[] =
-        data?.map((absence: any) => ({
-          id: absence.worker.id,
-          name: absence.worker.name,
-          employee_id: absence.worker.employee_id,
-          status: "absent",
-        })) || []
-
-      setWorkerDetails(workers)
-    }
-    // Implementar lógica similar para DC e vacation
-
-    setLoading(false)
   }
 
   const loadLineDetails = async (lineId: string) => {
     setLoading(true)
-    const supabase = getSupabase()
+    try {
+      const [lines, tracking] = await Promise.all([loadProductionLines(), loadProductionTracking()])
+      const line = lines.find((l: any) => l.id === lineId)
+      const dateStr = selectedDate.toISOString().split("T")[0]
+      const t = tracking.find((tr: any) => tr.lineId === lineId && tr.date === dateStr)
 
-    // Buscar informações da linha
-    const { data: line } = await supabase.from("production_lines").select("*").eq("id", lineId).single()
-
-    // Buscar plano da linha para o dia
-    const { data: shiftPlan } = await supabase
-      .from("shift_plans")
-      .select(`
-        target_quantity,
-        product:products (name, description),
-        production_tracking (produced_quantity)
-      `)
-      .eq("line_id", lineId)
-      .eq("daily_plan.date", selectedDate.toISOString().split("T")[0])
-      .single()
-
-    // Buscar trabalhadores na linha
-    const { data: assignments } = await supabase
-      .from("shift_assignments")
-      .select(`
-        worker:workers (name),
-        specialty:specialties (name)
-      `)
-      .eq("line_id", lineId)
-      .eq("schedule_day.date", selectedDate.toISOString().split("T")[0])
-
-    const detail: LineDetail = {
-      id: lineId,
-      name: line?.name || "",
-      description: line?.description || "",
-      product: shiftPlan?.product?.name || "",
-      productDescription: shiftPlan?.product?.description || "",
-      workers:
-        assignments?.map((a: any) => ({
-          name: a.worker?.name || "",
-          specialty: a.specialty?.name || "",
-        })) || [],
-      produced: Number(shiftPlan?.production_tracking?.[0]?.produced_quantity || 0),
-      target: Number(shiftPlan?.target_quantity || 0),
+      setLineDetail({
+        id: lineId,
+        name: line?.name || "",
+        description: (line as any)?.description || "",
+        product: (line as any)?.product || "",
+        productDescription: "",
+        workers: [],
+        produced: Number(t?.producedQuantity || 0),
+        target: Number((t as any)?.target || (line as any)?.target || 0),
+      })
+    } catch (error) {
+      console.error("[v0] Erro ao carregar detalhes da linha:", error)
+    } finally {
+      setLoading(false)
     }
-
-    setLineDetail(detail)
-    setLoading(false)
   }
 
   const currentStats = workerStats[selectedShift]

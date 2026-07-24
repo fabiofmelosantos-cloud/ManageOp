@@ -26,13 +26,16 @@ export default function LoginPage() {
     setIsLoading(true)
     setError(null)
 
-    if (email.toLowerCase() === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
+    const cleanEmail = email.trim().toLowerCase()
+    const cleanPassword = password.trim()
+
+    if (cleanEmail === ADMIN_CREDENTIALS.email && cleanPassword === ADMIN_CREDENTIALS.password) {
       try {
         const userProfile = {
           name: "Administrador",
           employeeId: "admin",
           role: "admin",
-          email: email,
+          email: cleanEmail,
         }
 
         localStorage.setItem("user", JSON.stringify(userProfile))

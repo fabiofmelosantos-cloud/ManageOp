@@ -2,9 +2,11 @@
 
 import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
-import { createClient } from "@/lib/supabase/client"
-import type { User } from "@supabase/supabase-js"
 import { useRouter } from "next/navigation"
+
+interface User {
+  email: string
+}
 
 interface UserProfile {
   name: string
@@ -32,7 +34,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
-  const supabase = createClient()
 
   // Agora carrega usuário apenas uma vez no mount
   useEffect(() => {

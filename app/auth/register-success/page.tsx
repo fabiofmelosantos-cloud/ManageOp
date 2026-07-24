@@ -27,7 +27,7 @@ export default function RegisterSuccessPage() {
             </CardHeader>
             <CardContent className="space-y-4 text-center">
               <p className="text-sm text-muted-foreground">
-                A sua conta foi criada com sucesso. Já pode fazer login no sistema com as suas credenciais.
+                Verifique seu email para confirmar sua conta. Após a confirmação, você poderá fazer login no sistema.
               </p>
               <Button asChild className="w-full">
                 <Link href="/auth/login">Ir para Login</Link>

@@ -9,20 +9,13 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
 
-interface NavItem {
-  name: string
-  href: string
-  icon: typeof Home
-  roles?: string[] // Se não definido, todos os roles têm acesso
-}
-
-const navigation: NavItem[] = [
+const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
   { name: "Escalas", href: "/schedules", icon: Eye },
-  { name: "Coordenador", href: "/coordinator", icon: Activity, roles: ["admin", "coordinator", "manager"] },
-  { name: "Plano Semanal", href: "/production-plan", icon: ClipboardList, roles: ["admin", "manager"] },
-  { name: "RH", href: "/hr", icon: User, roles: ["admin", "rh"] },
-  { name: "Configurações", href: "/settings", icon: Settings, roles: ["admin"] },
+  { name: "Coordenador", href: "/coordinator", icon: Activity },
+  { name: "Plano Semanal", href: "/production-plan", icon: ClipboardList },
+  { name: "RH", href: "/hr", icon: User },
+  { name: "Configurações", href: "/settings", icon: Settings },
 ]
 
 export function NavigationSidebar() {
@@ -76,27 +69,25 @@ export function NavigationSidebar() {
       )}
 
       <nav className="flex-1 space-y-1 p-4">
-        {navigation
-          .filter((item) => !item.roles || (userProfile && item.roles.includes(userProfile.role)))
-          .map((item) => {
-            const isActive = pathname === item.href
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-primary/20 text-primary border border-primary"
-                    : "text-foreground hover:bg-accent hover:text-accent-foreground",
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.name}
-              </Link>
-            )
-          })}
+        {navigation.map((item) => {
+          const isActive = pathname === item.href
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              onClick={() => setOpen(false)}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-primary/20 text-primary border border-primary"
+                  : "text-foreground hover:bg-accent hover:text-accent-foreground",
+              )}
+            >
+              <item.icon className="h-5 w-5" />
+              {item.name}
+            </Link>
+          )
+        })}
       </nav>
 
       <div className="p-4 border-t border-border space-y-2">

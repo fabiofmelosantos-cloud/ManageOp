@@ -8,7 +8,11 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { WeeklyPlanGrid } from "@/components/production-plan/weekly-plan-grid"
 import { ProductionPlanImporter } from "@/components/production-lines/production-plan-importer"
-import { Plus, Trash2, FileText, Upload } from "lucide-react"
+import { Plus, Trash2, FileText, Upload, Settings2, Check, Eye, EyeOff } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Checkbox } from "@/components/ui/checkbox"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
 import {
   getProductionLines,
   getProducts,
@@ -30,6 +34,7 @@ export function WeeklyPlanManagement() {
   const [planName, setPlanName] = useState("")
   const [startDate, setStartDate] = useState("")
   const [isLoading, setIsLoading] = useState(true)
+  const [isCreating, setIsCreating] = useState(false)
 
   useEffect(() => {
     const loadData = async () => {
@@ -50,7 +55,7 @@ export function WeeklyPlanManagement() {
     loadData()
   }, [])
 
-  const createNewPlan = () => {
+  const createNewPlan = async () => {
     if (!planName || !startDate) return
 
     const start = new Date(startDate + "T00:00:00")
@@ -74,33 +79,97 @@ export function WeeklyPlanManagement() {
       })
     }
 
-    const newPlan = addWeeklyPlan({
-      name: planName,
-      startDate: start.toISOString().split("T")[0],
-      days,
-    })
+    setIsCreating(true)
+    try {
+      const newPlan = await addWeeklyPlan({
+        name: planName,
+        startDate: start.toISOString().split("T")[0],
+        days,
+      })
 
-    const updatedPlans = [...weeklyPlans, newPlan]
-    setWeeklyPlans(updatedPlans)
-    setCurrentPlan(newPlan)
-    setPlanName("")
-    setStartDate("")
+      const updatedPlans = [...weeklyPlans, newPlan]
+      setWeeklyPlans(updatedPlans)
+      setCurrentPlan(newPlan)
+      setPlanName("")
+      setStartDate("")
+    } catch (error) {
+      console.error("[v0] Error creating plan:", error)
+      alert("Erro ao criar o plano. Por favor, tente novamente.")
+    } finally {
+      setIsCreating(false)
+    }
   }
 
-  const handleUpdatePlan = (updatedPlan: WeeklyProductionPlan) => {
-    updateWeeklyPlan(updatedPlan.id, updatedPlan)
-    setCurrentPlan(updatedPlan)
-    setWeeklyPlans((prev) => prev.map((p) => (p.id === updatedPlan.id ? updatedPlan : p)))
+  const handleUpdatePlan = async (updatedPlan: WeeklyProductionPlan) => {
+    try {
+      await updateWeeklyPlan(updatedPlan.id, updatedPlan)
+      setCurrentPlan(updatedPlan)
+      setWeeklyPlans((prev) => prev.map((p) => (p.id === updatedPlan.id ? updatedPlan : p)))
+    } catch (error) {
+      console.error("[v0] Error updating plan:", error)
+    }
   }
 
-  const handleDeletePlan = (id: string) => {
+  const handleDeletePlan = async (id: string) => {
     if (confirm("Tem certeza que deseja eliminar este plano?")) {
-      deleteWeeklyPlan(id)
-      setWeeklyPlans((prev) => prev.filter((p) => p.id !== id))
-      if (currentPlan?.id === id) {
-        setCurrentPlan(null)
+      try {
+        await deleteWeeklyPlan(id)
+        setWeeklyPlans((prev) => prev.filter((p) => p.id !== id))
+        if (currentPlan?.id === id) {
+          setCurrentPlan(null)
+        }
+      } catch (error) {
+        console.error("[v0] Error deleting plan:", error)
       }
     }
+  }
+
+  // Função para alternar visibilidade de uma linha
+  const toggleLineVisibility = async (lineId: string) => {
+    if (!currentPlan) return
+
+    const activeLines = productionLines.filter((l) => l.isActive !== false)
+    const currentVisibleIds = currentPlan.visibleLineIds || activeLines.map((l) => l.id)
+    
+    let newVisibleIds: string[]
+    if (currentVisibleIds.includes(lineId)) {
+      // Remover linha (mas manter pelo menos uma)
+      newVisibleIds = currentVisibleIds.filter((id) => id !== lineId)
+      if (newVisibleIds.length === 0) {
+        return // Não permitir esconder todas as linhas
+      }
+    } else {
+      // Adicionar linha
+      newVisibleIds = [...currentVisibleIds, lineId]
+    }
+
+    const updatedPlan = { ...currentPlan, visibleLineIds: newVisibleIds }
+    await handleUpdatePlan(updatedPlan)
+  }
+
+  // Função para mostrar/esconder todas as linhas
+  const toggleAllLines = async (show: boolean) => {
+    if (!currentPlan) return
+
+    const activeLines = productionLines.filter((l) => l.isActive !== false)
+    const newVisibleIds = show ? activeLines.map((l) => l.id) : []
+    
+    // Se estiver a esconder todas, manter pelo menos a primeira
+    if (newVisibleIds.length === 0 && activeLines.length > 0) {
+      newVisibleIds.push(activeLines[0].id)
+    }
+
+    const updatedPlan = { ...currentPlan, visibleLineIds: newVisibleIds }
+    await handleUpdatePlan(updatedPlan)
+  }
+
+  // Obter linhas visíveis para o plano atual
+  const getVisibleLines = () => {
+    const activeLines = productionLines.filter((l) => l.isActive !== false)
+    if (!currentPlan?.visibleLineIds) {
+      return activeLines
+    }
+    return activeLines.filter((l) => currentPlan.visibleLineIds!.includes(l.id))
   }
 
   if (isLoading) {
@@ -154,9 +223,18 @@ export function WeeklyPlanManagement() {
                   />
                 </div>
                 <div className="flex items-end">
-                  <Button onClick={createNewPlan} className="w-full min-h-[44px]">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Criar Plano
+                  <Button onClick={createNewPlan} className="w-full min-h-[44px]" disabled={isCreating || !planName || !startDate}>
+                    {isCreating ? (
+                      <>
+                        <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                        A criar...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Criar Plano
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
@@ -205,20 +283,110 @@ export function WeeklyPlanManagement() {
       {currentPlan && (
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>{currentPlan.name}</CardTitle>
-              <div className="text-sm text-muted-foreground">
-                {new Date(currentPlan.startDate).toLocaleDateString("pt-PT")} -{" "}
-                {new Date(new Date(currentPlan.startDate).getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString(
-                  "pt-PT",
-                )}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <CardTitle>{currentPlan.name}</CardTitle>
+                <div className="text-sm text-muted-foreground mt-1">
+                  {new Date(currentPlan.startDate).toLocaleDateString("pt-PT")} -{" "}
+                  {new Date(new Date(currentPlan.startDate).getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString(
+                    "pt-PT",
+                  )}
+                </div>
               </div>
+              
+              {/* Seletor de Linhas Visíveis */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Settings2 className="h-4 w-4" />
+                    <span className="hidden sm:inline">Linhas Visíveis</span>
+                    <span className="sm:hidden">Linhas</span>
+                    <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs font-medium">
+                      {getVisibleLines().length}/{productionLines.filter((l) => l.isActive !== false).length}
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 p-0" align="end">
+                  <div className="p-3 border-b">
+                    <h4 className="font-medium text-sm">Linhas de Produção</h4>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Selecione as linhas a mostrar neste plano
+                    </p>
+                  </div>
+                  
+                  <div className="p-2 border-b flex gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="flex-1 h-8 text-xs"
+                      onClick={() => toggleAllLines(true)}
+                    >
+                      <Eye className="h-3 w-3 mr-1" />
+                      Mostrar Todas
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="flex-1 h-8 text-xs"
+                      onClick={() => toggleAllLines(false)}
+                    >
+                      <EyeOff className="h-3 w-3 mr-1" />
+                      Esconder Todas
+                    </Button>
+                  </div>
+                  
+                  <ScrollArea className="h-[250px]">
+                    <div className="p-2 space-y-1">
+                      {productionLines
+                        .filter((l) => l.isActive !== false)
+                        .map((line) => {
+                          const isVisible = !currentPlan.visibleLineIds || currentPlan.visibleLineIds.includes(line.id)
+                          return (
+                            <button
+                              key={line.id}
+                              onClick={() => toggleLineVisibility(line.id)}
+                              className={`w-full flex items-center gap-3 p-2 rounded-md text-left transition-colors ${
+                                isVisible 
+                                  ? "bg-primary/10 hover:bg-primary/15" 
+                                  : "hover:bg-muted"
+                              }`}
+                            >
+                              <div className={`h-5 w-5 rounded border flex items-center justify-center transition-colors ${
+                                isVisible 
+                                  ? "bg-primary border-primary" 
+                                  : "border-input"
+                              }`}>
+                                {isVisible && <Check className="h-3 w-3 text-primary-foreground" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-sm truncate">{line.name}</div>
+                                {line.description && (
+                                  <div className="text-xs text-muted-foreground truncate">{line.description}</div>
+                                )}
+                              </div>
+                              {isVisible ? (
+                                <Eye className="h-4 w-4 text-primary shrink-0" />
+                              ) : (
+                                <EyeOff className="h-4 w-4 text-muted-foreground shrink-0" />
+                              )}
+                            </button>
+                          )
+                        })}
+                    </div>
+                  </ScrollArea>
+                  
+                  <Separator />
+                  <div className="p-2 text-xs text-muted-foreground text-center">
+                    {getVisibleLines().length} de {productionLines.filter((l) => l.isActive !== false).length} linhas visíveis
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </CardHeader>
           <CardContent>
             <WeeklyPlanGrid
               plan={currentPlan}
-              productionLines={productionLines}
+              productionLines={getVisibleLines()}
               products={products}
               onUpdate={handleUpdatePlan}
             />

@@ -33,15 +33,7 @@ export function WeeklyPlanGrid({
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set())
   const validDays = useMemo(() => plan.days || [], [plan.days])
 
-  useEffect(() => {
-    console.log("[v0] WeeklyPlanGrid mounted/updated with plan:", plan.id)
-    console.log("[v0] Valid days count:", validDays.length)
-    console.log(
-      "[v0] Days data:",
-      validDays.map((d) => d.date),
-    )
-    console.log("[v0] Day filter:", dayFilter)
-  }, [plan, validDays, dayFilter])
+
 
   const toggleCell = useCallback(
     (lineId: string, dayIndex: number, shift: ShiftType) => {
@@ -65,6 +57,59 @@ export function WeeklyPlanGrid({
     (dayIndex: number, shift: ShiftType, lineId: string): ProductionPlanEntry | null => {
       const shiftPlan = validDays[dayIndex]?.shifts.find((s) => s.shift === shift)
       return shiftPlan?.entries.find((e) => e.lineId === lineId) || null
+    },
+    [validDays],
+  )
+
+  // Calcular o total acumulado de produção para um produto numa linha até um determinado dia/turno
+  const getAccumulatedTotal = useCallback(
+    (lineId: string, productId: string | null, upToDayIndex: number, shift: ShiftType): number => {
+      if (!productId) return 0
+      
+      let total = 0
+      const shifts: ShiftType[] = ["morning", "afternoon", "night"]
+      const currentShiftIndex = shifts.indexOf(shift)
+      
+      for (let dayIdx = 0; dayIdx <= upToDayIndex; dayIdx++) {
+        const day = validDays[dayIdx]
+        if (!day) continue
+        
+        for (let shiftIdx = 0; shiftIdx < shifts.length; shiftIdx++) {
+          // No último dia, só contar até ao turno atual (inclusive)
+          if (dayIdx === upToDayIndex && shiftIdx > currentShiftIndex) break
+          
+          const shiftPlan = day.shifts.find((s) => s.shift === shifts[shiftIdx])
+          const entry = shiftPlan?.entries.find((e) => e.lineId === lineId && e.productId === productId)
+          if (entry && entry.targetQuantity > 0) {
+            total += entry.targetQuantity
+          }
+        }
+      }
+      
+      return total
+    },
+    [validDays],
+  )
+
+  // Calcular o total da semana para um produto numa linha
+  const getWeeklyTotal = useCallback(
+    (lineId: string, productId: string | null): number => {
+      if (!productId) return 0
+      
+      let total = 0
+      const shifts: ShiftType[] = ["morning", "afternoon", "night"]
+      
+      for (const day of validDays) {
+        for (const shift of shifts) {
+          const shiftPlan = day.shifts.find((s) => s.shift === shift)
+          const entry = shiftPlan?.entries.find((e) => e.lineId === lineId && e.productId === productId)
+          if (entry && entry.targetQuantity > 0) {
+            total += entry.targetQuantity
+          }
+        }
+      }
+      
+      return total
     },
     [validDays],
   )
@@ -213,6 +258,11 @@ export function WeeklyPlanGrid({
   }
 
   const getActiveLinesForDays = (days: typeof displayDays, shift: ShiftType) => {
+    // Em modo edição, mostrar todas as linhas passadas (já filtradas pelo pai)
+    if (!readOnly) {
+      return productionLines
+    }
+    // Em modo visualização (readOnly), mostrar apenas linhas com produção configurada
     return productionLines.filter((line) => {
       return days.some((day) => {
         const actualDayIndex = validDays.indexOf(day)
@@ -223,13 +273,9 @@ export function WeeklyPlanGrid({
   }
 
   if (validDays.length === 0) {
-    console.log("[v0] WARNING: No valid days found in plan:", plan)
     return (
       <div className="text-center p-8 text-muted-foreground">
         <p>Este plano não possui dias configurados.</p>
-        <p className="text-xs mt-2">
-          ID do Plano: {plan.id} | Dias: {plan.days?.length || 0}
-        </p>
       </div>
     )
   }
@@ -291,17 +337,32 @@ export function WeeklyPlanGrid({
         {shiftsToShow.map((shift) => {
           const activeLines = getActiveLinesForDays(displayDays, shift)
 
-          if (activeLines.length === 0) {
+          // Em modo readOnly, esconder turnos sem produção
+          if (readOnly && activeLines.length === 0) {
             return null
           }
 
           return (
             <div key={shift} className="space-y-4">
               <h3 className="text-base sm:text-lg font-semibold">{SHIFT_NAMES[shift]}</h3>
+              
+              {/* Mensagem quando não há linhas de produção configuradas */}
+              {!readOnly && activeLines.length === 0 && (
+                <div className="text-center p-6 bg-muted/50 rounded-lg border border-dashed">
+                  <p className="text-sm text-muted-foreground">
+                    Não há linhas de produção configuradas.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Adicione linhas de produção nas Configurações para poder planear a produção.
+                  </p>
+                </div>
+              )}
+
+              {activeLines.length > 0 && (
               <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
                 <div className="inline-block min-w-full align-middle">
                   {/* Desktop Grid View */}
-                  <div className="hidden sm:grid sm:grid-cols-[200px_repeat(7,1fr)] gap-2">
+                  <div className="hidden sm:grid sm:grid-cols-[200px_repeat(7,1fr)_100px] gap-2">
                     {/* Header - apenas se visualizando semana completa */}
                     {dayFilter === "all" && (
                       <>
@@ -311,6 +372,9 @@ export function WeeklyPlanGrid({
                             <div className="text-sm">{WEEKDAYS[validDays.indexOf(day)]}</div>
                           </div>
                         ))}
+                        <div className="font-semibold p-3 bg-primary/20 rounded-lg text-center">
+                          <div className="text-sm">Total</div>
+                        </div>
                       </>
                     )}
 
@@ -351,7 +415,22 @@ export function WeeklyPlanGrid({
                                 </div>
 
                                 {entry && entry.targetQuantity > 0 && (
-                                  <div className="text-xs text-muted-foreground">{entry.targetQuantity} kg</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    <div>{entry.targetQuantity} kg</div>
+                                    {entry.expectedPallets > 0 && (
+                                      <div className="opacity-75">{entry.expectedPallets} pal.</div>
+                                    )}
+                                  </div>
+                                )}
+                                
+                                {/* Total Acumulado */}
+                                {entry?.productId && (
+                                  <div className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded mt-1">
+                                    <span className="opacity-70">Acum: </span>
+                                    <span className="font-semibold">
+                                      {getAccumulatedTotal(line.id, entry.productId, actualDayIndex, shift).toLocaleString("pt-PT")} kg
+                                    </span>
+                                  </div>
                                 )}
 
                                 {isExpanded && (
@@ -397,47 +476,12 @@ export function WeeklyPlanGrid({
                                       )}
                                     </div>
 
-                                    {actualDayIndex === 0 && (
-                                      <>
-                                        <div className="space-y-2">
-                                          <Label className="text-xs font-semibold">Kg Pedidos (Total)</Label>
-                                          <Input
-                                            type="number"
-                                            className="h-8 text-xs font-semibold"
-                                            placeholder="Ex: 50000"
-                                            value={entry?.requestedKg || ""}
-                                            onChange={(e) =>
-                                              updateEntry(actualDayIndex, shift, line.id, {
-                                                requestedKg: Number(e.target.value),
-                                              })
-                                            }
-                                            disabled={readOnly}
-                                          />
-                                        </div>
-
-                                        <div className="space-y-2">
-                                          <Label className="text-xs font-semibold">Kg/Hora</Label>
-                                          <Input
-                                            type="number"
-                                            className="h-8 text-xs font-semibold"
-                                            placeholder="Ex: 500"
-                                            value={entry?.kgPerHour || ""}
-                                            onChange={(e) =>
-                                              updateEntry(actualDayIndex, shift, line.id, {
-                                                kgPerHour: Number(e.target.value),
-                                              })
-                                            }
-                                            disabled={readOnly}
-                                          />
-                                        </div>
-                                      </>
-                                    )}
-
                                     <div className="space-y-2">
-                                      <Label className="text-xs">Quantidade (kg)</Label>
+                                      <Label className="text-xs">Total a Produzir (kg)</Label>
                                       <Input
                                         type="number"
                                         className="h-8 text-xs"
+                                        placeholder="Ex: 5000"
                                         value={entry?.targetQuantity || ""}
                                         onChange={(e) =>
                                           updateEntry(actualDayIndex, shift, line.id, {
@@ -448,19 +492,38 @@ export function WeeklyPlanGrid({
                                       />
                                     </div>
 
-                                    <div className="space-y-2">
-                                      <Label className="text-xs">Capacidade Linha (kg/h)</Label>
-                                      <Input
-                                        type="number"
-                                        className="h-8 text-xs"
-                                        value={entry?.lineCapacity || ""}
-                                        onChange={(e) =>
-                                          updateEntry(actualDayIndex, shift, line.id, {
-                                            lineCapacity: Number(e.target.value),
-                                          })
-                                        }
-                                        disabled={readOnly}
-                                      />
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div className="space-y-2">
+                                        <Label className="text-xs">RPM</Label>
+                                        <Input
+                                          type="number"
+                                          className="h-8 text-xs"
+                                          placeholder="Ex: 120"
+                                          value={entry?.rpm || ""}
+                                          onChange={(e) =>
+                                            updateEntry(actualDayIndex, shift, line.id, {
+                                              rpm: Number(e.target.value),
+                                            })
+                                          }
+                                          disabled={readOnly}
+                                        />
+                                      </div>
+
+                                      <div className="space-y-2">
+                                        <Label className="text-xs">kg/h</Label>
+                                        <Input
+                                          type="number"
+                                          className="h-8 text-xs"
+                                          placeholder="Ex: 500"
+                                          value={entry?.kgPerHour || ""}
+                                          onChange={(e) =>
+                                            updateEntry(actualDayIndex, shift, line.id, {
+                                              kgPerHour: Number(e.target.value),
+                                            })
+                                          }
+                                          disabled={readOnly}
+                                        />
+                                      </div>
                                     </div>
 
                                     <div className="space-y-2">
@@ -468,6 +531,7 @@ export function WeeklyPlanGrid({
                                       <Input
                                         type="number"
                                         className="h-8 text-xs"
+                                        placeholder="Ex: 10"
                                         value={entry?.expectedPallets || ""}
                                         onChange={(e) =>
                                           updateEntry(actualDayIndex, shift, line.id, {
@@ -483,6 +547,50 @@ export function WeeklyPlanGrid({
                             </Card>
                           )
                         })}
+                        
+                        {/* Coluna de Total Semanal */}
+                        {dayFilter === "all" && (
+                          <div className="bg-primary/10 rounded-lg p-2 flex flex-col justify-center items-center">
+                            {(() => {
+                              // Calcular todos os produtos desta linha neste turno
+                              const productTotals = new Map<string, { name: string; total: number }>()
+                              
+                              for (const day of validDays) {
+                                const shiftPlan = day.shifts.find((s) => s.shift === shift)
+                                const entry = shiftPlan?.entries.find((e) => e.lineId === line.id)
+                                if (entry?.productId && entry.targetQuantity > 0) {
+                                  const product = products.find((p) => p.id === entry.productId)
+                                  const existing = productTotals.get(entry.productId)
+                                  if (existing) {
+                                    existing.total += entry.targetQuantity
+                                  } else {
+                                    productTotals.set(entry.productId, {
+                                      name: product?.name || "Produto",
+                                      total: entry.targetQuantity,
+                                    })
+                                  }
+                                }
+                              }
+                              
+                              if (productTotals.size === 0) {
+                                return <span className="text-xs text-muted-foreground">-</span>
+                              }
+                              
+                              return (
+                                <div className="space-y-1 w-full">
+                                  {Array.from(productTotals.entries()).map(([productId, data]) => (
+                                    <div key={productId} className="text-center">
+                                      <div className="text-[10px] text-muted-foreground truncate">{data.name}</div>
+                                      <div className="text-xs font-bold text-primary">
+                                        {data.total.toLocaleString("pt-PT")} kg
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )
+                            })()}
+                          </div>
+                        )}
                       </>
                     ))}
                   </div>
@@ -535,10 +643,34 @@ export function WeeklyPlanGrid({
                                           <span className="font-medium">{product?.name || "-"}</span>
                                         </div>
                                         {entry && entry.targetQuantity > 0 && (
-                                          <div className="text-sm mt-1">
-                                            <span className="text-muted-foreground">Objetivo: </span>
-                                            <span className="font-semibold text-primary">
-                                              {entry.targetQuantity} kg
+                                          <div className="text-sm mt-1 space-y-0.5">
+                                            <div>
+                                              <span className="text-muted-foreground">Total: </span>
+                                              <span className="font-semibold text-primary">
+                                                {entry.targetQuantity} kg
+                                              </span>
+                                            </div>
+                                            {(entry.rpm || entry.kgPerHour) && (
+                                              <div className="text-xs text-muted-foreground">
+                                                {entry.rpm && <span>{entry.rpm} RPM</span>}
+                                                {entry.rpm && entry.kgPerHour && <span> | </span>}
+                                                {entry.kgPerHour && <span>{entry.kgPerHour} kg/h</span>}
+                                              </div>
+                                            )}
+                                            {entry.expectedPallets > 0 && (
+                                              <div className="text-xs text-muted-foreground">
+                                                {entry.expectedPallets} paletes previstas
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                        
+                                        {/* Total Acumulado Mobile */}
+                                        {entry?.productId && (
+                                          <div className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-md mt-2 inline-block">
+                                            <span className="opacity-70">Acumulado: </span>
+                                            <span className="font-semibold">
+                                              {getAccumulatedTotal(line.id, entry.productId, actualDayIndex, shift).toLocaleString("pt-PT")} kg
                                             </span>
                                           </div>
                                         )}
@@ -602,47 +734,12 @@ export function WeeklyPlanGrid({
                                           )}
                                         </div>
 
-                                        {actualDayIndex === 0 && (
-                                          <>
-                                            <div className="space-y-2">
-                                              <Label className="text-xs font-semibold">Kg Pedidos (Total)</Label>
-                                              <Input
-                                                type="number"
-                                                className="h-10 text-sm font-semibold"
-                                                placeholder="Ex: 50000"
-                                                value={entry?.requestedKg || ""}
-                                                onChange={(e) =>
-                                                  updateEntry(actualDayIndex, shift, line.id, {
-                                                    requestedKg: Number(e.target.value),
-                                                  })
-                                                }
-                                                disabled={readOnly}
-                                              />
-                                            </div>
-
-                                            <div className="space-y-2">
-                                              <Label className="text-xs font-semibold">Kg/Hora</Label>
-                                              <Input
-                                                type="number"
-                                                className="h-10 text-sm font-semibold"
-                                                placeholder="Ex: 500"
-                                                value={entry?.kgPerHour || ""}
-                                                onChange={(e) =>
-                                                  updateEntry(actualDayIndex, shift, line.id, {
-                                                    kgPerHour: Number(e.target.value),
-                                                  })
-                                                }
-                                                disabled={readOnly}
-                                              />
-                                            </div>
-                                          </>
-                                        )}
-
                                         <div className="space-y-2">
-                                          <Label className="text-xs">Produção Diária (kg)</Label>
+                                          <Label className="text-xs">Total a Produzir (kg)</Label>
                                           <Input
                                             type="number"
                                             className="h-10 text-sm"
+                                            placeholder="Ex: 5000"
                                             value={entry?.targetQuantity || ""}
                                             onChange={(e) =>
                                               updateEntry(actualDayIndex, shift, line.id, {
@@ -653,19 +750,38 @@ export function WeeklyPlanGrid({
                                           />
                                         </div>
 
-                                        <div className="space-y-2">
-                                          <Label className="text-xs">Capacidade (kg/h)</Label>
-                                          <Input
-                                            type="number"
-                                            className="h-10 text-sm"
-                                            value={entry?.lineCapacity || ""}
-                                            onChange={(e) =>
-                                              updateEntry(actualDayIndex, shift, line.id, {
-                                                lineCapacity: Number(e.target.value),
-                                              })
-                                            }
-                                            disabled={readOnly}
-                                          />
+                                        <div className="grid grid-cols-2 gap-3">
+                                          <div className="space-y-2">
+                                            <Label className="text-xs">RPM</Label>
+                                            <Input
+                                              type="number"
+                                              className="h-10 text-sm"
+                                              placeholder="Ex: 120"
+                                              value={entry?.rpm || ""}
+                                              onChange={(e) =>
+                                                updateEntry(actualDayIndex, shift, line.id, {
+                                                  rpm: Number(e.target.value),
+                                                })
+                                              }
+                                              disabled={readOnly}
+                                            />
+                                          </div>
+
+                                          <div className="space-y-2">
+                                            <Label className="text-xs">kg/h</Label>
+                                            <Input
+                                              type="number"
+                                              className="h-10 text-sm"
+                                              placeholder="Ex: 500"
+                                              value={entry?.kgPerHour || ""}
+                                              onChange={(e) =>
+                                                updateEntry(actualDayIndex, shift, line.id, {
+                                                  kgPerHour: Number(e.target.value),
+                                                })
+                                              }
+                                              disabled={readOnly}
+                                            />
+                                          </div>
                                         </div>
 
                                         <div className="space-y-2">
@@ -695,6 +811,7 @@ export function WeeklyPlanGrid({
                   </div>
                 </div>
               </div>
+              )}
             </div>
           )
         })}

@@ -20,6 +20,7 @@ const cache: {
   products: Product[] | null
   productionTracking: ProductionTracking[] | null
   shiftReports: any[] | null
+  generatedTasks: import("./types").GeneratedTask[] | null
 } = {
   workers: null,
   productionLines: null,
@@ -29,6 +30,7 @@ const cache: {
   products: null,
   productionTracking: null,
   shiftReports: null,
+  generatedTasks: null,
 }
 
 async function readFromNeon<T>(key: string, defaultValue: T): Promise<T> {
@@ -240,6 +242,21 @@ export async function deleteProduct(id: string): Promise<boolean> {
 export async function saveProducts(products: Product[]): Promise<void> {
   cache.products = products
   await writeToNeon("products", products)
+}
+
+export function getGeneratedTasks(): import("./types").GeneratedTask[] {
+  return cache.generatedTasks || []
+}
+
+export async function loadGeneratedTasks(): Promise<import("./types").GeneratedTask[]> {
+  const tasks = await readFromNeon<import("./types").GeneratedTask[]>("generated_tasks", [])
+  cache.generatedTasks = tasks
+  return tasks
+}
+
+export async function saveGeneratedTasks(tasks: import("./types").GeneratedTask[]): Promise<void> {
+  cache.generatedTasks = tasks
+  await writeToNeon("generated_tasks", tasks)
 }
 
 export function getSchedules(): Schedule[] {

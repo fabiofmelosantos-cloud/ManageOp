@@ -6,6 +6,7 @@ import { Users, Package, Calendar, ClipboardList, UserCog, Trash2 } from "lucide
 import WorkersPage from "@/app/workers/page"
 import ProductionLinesPage from "@/app/production-lines/page"
 import { ScheduleGeneratorForm } from "@/components/schedule/schedule-generator-form"
+import { TaskGeneratorPanel } from "@/components/schedule/task-generator-panel"
 import { WeeklyPlanManagement } from "@/components/production-plan/weekly-plan-management"
 import { HRManagementPanel } from "@/components/hr/hr-management-panel"
 import { useState, useEffect } from "react"
@@ -245,6 +246,8 @@ export default function SettingsPage() {
                   />
                 </CardContent>
               </Card>
+
+              <TaskGeneratorPanel workers={workers} />
 
               <Card>
                 <CardHeader>

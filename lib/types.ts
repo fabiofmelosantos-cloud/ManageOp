@@ -127,6 +127,17 @@ export interface ScheduleGenerationConfig {
   shifts: ShiftType[]
 }
 
+export interface GeneratedTask {
+  id: string
+  description: string
+  date: string
+  workerId: string
+  shift: ShiftType
+  monthKey: string
+  week: number
+  createdAt: string
+}
+
 export interface ScheduleConflict {
   type: "duplicate_position" | "multiple_shifts_same_day" | "shift_rotation_violation"
   severity: "error" | "warning"

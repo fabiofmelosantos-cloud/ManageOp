@@ -51,22 +51,26 @@ export function ProductionLineForm({ line, products, specialties, onSubmit, onCa
     })
   }
 
-  const addRequirement = () => {
-    if (products.length === 0) {
-      alert("Adicione produtos primeiro!")
+  const addRequirement = (productId: string) => {
+    if (requirements.some((requirement) => requirement.productId === productId)) {
       return
     }
+
     const newIndex = requirements.length
     setRequirements((prev) => [
       ...prev,
       {
-        productId: products[0].id,
+        productId,
         workersNeeded: 1,
         requiredSpecialties: [],
       },
     ])
     setExpandedCards((prev) => [...prev, newIndex])
   }
+
+  const availableProducts = products.filter(
+    (product) => !requirements.some((requirement) => requirement.productId === product.id),
+  )
 
   const removeRequirement = (index: number) => {
     setRequirements((prev) => prev.filter((_, i) => i !== index))
@@ -284,17 +288,40 @@ export function ProductionLineForm({ line, products, specialties, onSubmit, onCa
       </div>
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Label>Produtos e Requisitos *</Label>
-          <Button type="button" size="sm" variant="outline" onClick={addRequirement}>
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Produto
-          </Button>
+        <div className="space-y-2">
+          <Label htmlFor="line-products">Produtos produzidos por esta linha *</Label>
+          <Select
+            value=""
+            onValueChange={addRequirement}
+            disabled={availableProducts.length === 0}
+          >
+            <SelectTrigger id="line-products">
+              <SelectValue
+                placeholder={
+                  products.length === 0
+                    ? "Adicione produtos primeiro"
+                    : availableProducts.length === 0
+                      ? "Todos os produtos já foram adicionados"
+                      : "Selecione um produto para adicionar"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {availableProducts.map((product) => (
+                <SelectItem key={product.id} value={product.id}>
+                  {product.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            Escolha no menu os produtos que esta linha pode produzir. Você pode adicionar mais de um.
+          </p>
         </div>
 
         {requirements.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8 border border-dashed rounded-lg">
-            Adicione produtos que serão produzidos nesta linha
+            Nenhum produto selecionado para esta linha
           </p>
         ) : (
           <div className="space-y-4">

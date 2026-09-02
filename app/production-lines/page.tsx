@@ -10,7 +10,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Plus } from 'lucide-react';
-import { ProductManager } from '@/components/production-lines/product-manager';
 import { ProductionLineForm } from '@/components/production-lines/production-line-form';
 import { ProductionLineList } from '@/components/production-lines/production-line-list';
 import { ProductionPlanImporter } from '@/components/production-lines/production-plan-importer';
@@ -22,7 +21,6 @@ import {
   deleteProductionLine,
   getProducts,
   addProduct,
-  deleteProduct,
   getSpecialties,
   addSpecialty,
   loadProductionLines,
@@ -192,16 +190,8 @@ export default function ProductionLinesPage() {
           </div>
         </div>
 
-        <ProductManager
-          products={products}
-          onAdd={handleAddProduct}
-          onDelete={handleDeleteProduct}
-        />
-
         <ProductionLineList
           lines={lines}
-          products={products}
-          specialties={specialties}
           onEdit={handleEditLine}
           onDelete={handleDeleteLine}
         />

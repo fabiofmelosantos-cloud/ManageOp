@@ -56,8 +56,8 @@ export function SupportCard() {
 
   return <Dialog open={open} onOpenChange={setOpen}>
     <DialogTrigger asChild>
-      <Card className="group aspect-square cursor-pointer border-primary/20 transition-colors hover:border-primary/50 hover:shadow-md">
-        <CardContent className="flex h-full flex-col items-center justify-center gap-2 p-2 text-center">
+      <Card className="group aspect-square border-primary/20 transition-all hover:border-primary/50 hover:shadow-lg active:scale-[0.98]">
+        <CardContent className="flex h-full flex-col items-center justify-center gap-2 p-2 text-center sm:p-3">
           <LifeBuoy className="size-8 text-primary" aria-hidden="true" />
           <CardTitle className="text-xs sm:text-sm">Suporte</CardTitle>
         </CardContent>

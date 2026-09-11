@@ -73,8 +73,25 @@ export function MonthlyTasksPage() {
 
   const updateAssignment = async (taskId: string, date: string, value: string) => {
     const assignments = Object.fromEntries(tasks.map((task) => [task.id, { ...(plan?.assignments?.[task.id] ?? {}) }]))
-    assignments[taskId][date] = value
-    setSavingCell(`${taskId}-${date}`); await persist(assignments); setSavingCell(null)
+    const normalizedName = value.trim()
+    assignments[taskId][date] = normalizedName
+
+    // O primeiro dia do mês funciona como modelo: o nome escolhido preenche os dias úteis conforme a periodicidade.
+    const selectedDate = new Date(`${date}T12:00:00`)
+    const task = tasks.find((item) => item.id === taskId)
+    if (task && selectedDate.getDate() === 1 && normalizedName) {
+      const worker = workers.find((item) => item.name.toLocaleLowerCase() === normalizedName.toLocaleLowerCase())
+      for (const day of days) {
+        if (day.getDay() === 0 || day.getDay() === 6) continue
+        const dayDate = day.toISOString().slice(0, 10)
+        const active = task.frequency === "daily" || day.getDay() === 2 || day.getDay() === 5
+        if (active && (!worker || !isOnVacation(vacations, worker, dayDate))) assignments[taskId][dayDate] = normalizedName
+      }
+    }
+
+    setSavingCell(`${taskId}-${date}`)
+    await persist(assignments)
+    setSavingCell(null)
   }
 
   const toggleLock = async (taskId: string) => {

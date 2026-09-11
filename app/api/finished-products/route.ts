@@ -5,7 +5,8 @@ import type { FinishedProduct } from "@/lib/types"
 const STORAGE_KEY = "finished_products"
 
 export async function GET() {
-  return NextResponse.json((await getData<FinishedProduct[]>(STORAGE_KEY)) ?? [])
+  const items = (await getData<FinishedProduct[]>(STORAGE_KEY)) ?? []
+  return NextResponse.json(items.sort((a, b) => (b.shippedAt ?? b.createdAt).localeCompare(a.shippedAt ?? a.createdAt)))
 }
 
 export async function POST(request: Request) {
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
   }
 
   const item: FinishedProduct = {
-    id: crypto.randomUUID(), palletNumber, product, quantity, unit: String(body.unit ?? "kg"), lot, expiryDate, productionDate,
+    id: crypto.randomUUID(), palletNumber, product, quantity, unit: "unidades", lot, expiryDate, productionDate,
     channel: "HQ", createdAt: new Date().toISOString(),
   }
   const items = (await getData<FinishedProduct[]>(STORAGE_KEY)) ?? []
@@ -43,7 +44,8 @@ export async function PATCH(request: Request) {
       ? { ...item, shippedAt: String(body.shippedAt ?? new Date().toISOString()), shippedQuantity: Number(body.shippedQuantity), shippedLot: String(body.shippedLot ?? ""), shippedPalletNumber: String(body.shippedPalletNumber ?? "") }
       : item
 
-  if (body.action === "ship" && (!updated.warehouseValidatedAt || !updated.shippedQuantity || !updated.shippedLot || !updated.shippedPalletNumber)) {
+  const shippedQuantity = updated.shippedQuantity ?? 0
+  if (body.action === "ship" && (!updated.warehouseValidatedAt || !Number.isFinite(shippedQuantity) || shippedQuantity <= 0 || !updated.shippedLot || !updated.shippedPalletNumber || shippedQuantity > item.quantity)) {
     return NextResponse.json({ error: "A palete deve ser validada e a expedição preenchida." }, { status: 400 })
   }
   await setData(STORAGE_KEY, items.map((entry) => entry.id === id ? updated : entry))

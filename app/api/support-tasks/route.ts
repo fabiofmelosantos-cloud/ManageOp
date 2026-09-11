@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { getData, setData } from "@/lib/neon-client"
+import { loadStockItems, saveStockItems } from "@/lib/storage"
 
 export type SupportTask = {
   id: string
@@ -8,6 +9,7 @@ export type SupportTask = {
   internalCode: string
   quantityToLabel: number
   quantityLabeled: number
+  wasteQuantity: number
   operatorId: string
   operatorName: string
   createdAt: string
@@ -30,10 +32,26 @@ export async function PATCH(request: Request) {
   const task = tasks.find((item) => item.id === taskId)
   if (!task) return NextResponse.json({ error: "Tarefa não encontrada." }, { status: 404 })
 
-  const hasExecutionUpdate = body.quantityLabeled !== undefined || body.operatorId !== undefined || body.operatorName !== undefined
-  const updatedTask = hasExecutionUpdate
-    ? { ...task, quantityLabeled: Number(body.quantityLabeled), operatorId: String(body.operatorId ?? ""), operatorName: String(body.operatorName ?? "") }
-    : { ...task, completed: Boolean(body.completed) }
+  const hasExecutionUpdate = body.quantityLabeled !== undefined || body.wasteQuantity !== undefined || body.operatorId !== undefined || body.operatorName !== undefined
+  if (hasExecutionUpdate) {
+    const quantityLabeled = Number(body.quantityLabeled)
+    const wasteQuantity = Number(body.wasteQuantity ?? task.wasteQuantity ?? 0)
+    if (!Number.isFinite(quantityLabeled) || quantityLabeled < 0 || !Number.isFinite(wasteQuantity) || wasteQuantity < 0) return NextResponse.json({ error: "Informe quantidades válidas." }, { status: 400 })
+    const updatedTask = { ...task, quantityLabeled, wasteQuantity, operatorId: String(body.operatorId ?? ""), operatorName: String(body.operatorName ?? "") }
+    const saved = await setData(STORAGE_KEY, tasks.map((item) => item.id === taskId ? updatedTask : item))
+    if (!saved) return NextResponse.json({ error: "Não foi possível atualizar a tarefa." }, { status: 500 })
+    return NextResponse.json(updatedTask)
+  }
+
+  const nextCompleted = Boolean(body.completed)
+  if (nextCompleted && !task.completed) {
+    const stockItems = await loadStockItems()
+    const stockItem = stockItems.find((item) => item.internalCode === task.internalCode)
+    const usedQuantity = task.quantityLabeled + task.wasteQuantity
+    if (!stockItem || stockItem.quantity < usedQuantity) return NextResponse.json({ error: "Stock insuficiente para concluir esta tarefa." }, { status: 409 })
+    await saveStockItems(stockItems.map((item) => item.id === stockItem.id ? { ...item, quantity: item.quantity - usedQuantity } : item))
+  }
+  const updatedTask = { ...task, completed: nextCompleted }
   const saved = await setData(STORAGE_KEY, tasks.map((item) => item.id === taskId ? updatedTask : item))
   if (!saved) return NextResponse.json({ error: "Não foi possível atualizar a tarefa." }, { status: 500 })
   return NextResponse.json(updatedTask)
@@ -58,6 +76,7 @@ export async function POST(request: Request) {
     internalCode,
     quantityToLabel,
     quantityLabeled: 0,
+    wasteQuantity: 0,
     operatorId: "",
     operatorName: "",
     createdAt: new Date().toISOString(),

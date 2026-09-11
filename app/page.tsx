@@ -285,7 +285,29 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2">
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow active:scale-[0.98]">
+          <Card
+            role="button"
+            tabIndex={0}
+            aria-label="Ver detalhe das linhas de produção"
+            onClick={() => {
+              const firstRunningLine = productionLines.find((line) => line.isRunning) ?? productionLines[0]
+              if (firstRunningLine) {
+                setSelectedLine(firstRunningLine.id)
+                loadLineDetails(firstRunningLine.id)
+              }
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault()
+                const firstRunningLine = productionLines.find((line) => line.isRunning) ?? productionLines[0]
+                if (firstRunningLine) {
+                  setSelectedLine(firstRunningLine.id)
+                  loadLineDetails(firstRunningLine.id)
+                }
+              }
+            }}
+            className="cursor-pointer transition-shadow hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]"
+          >
             <CardHeader className="pb-2 sm:pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
@@ -293,48 +315,25 @@ export default function DashboardPage() {
                   Linhas de Produção
                 </CardTitle>
                 <Badge variant="outline" className="text-xs">
-                  {productionLines.filter((l) => l.isRunning).length}/{productionLines.length}
+                  {productionLines.filter((line) => line.isRunning).length} em produção
                 </Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-2 sm:space-y-3">
-              <div className="grid grid-cols-2 gap-2 rounded-lg border bg-muted/30 p-2 text-center">
-                <div><p className="text-[11px] text-muted-foreground">Semana corrente</p><p className="text-xl font-bold">{weeklyLineCounts.current || productionLines.filter((line) => line.isRunning).length}</p><p className="text-[11px] text-muted-foreground">linhas em funcionamento</p></div>
-                <div><p className="text-[11px] text-muted-foreground">Próxima semana</p><p className="text-xl font-bold">{weeklyLineCounts.next}</p><p className="text-[11px] text-muted-foreground">linhas planeadas</p></div>
-              </div>
-              {productionLines.slice(0, 3).map((line) => (
-                <div
-                  key={line.id}
-                  onClick={() => {
-                    setSelectedLine(line.id)
-                    loadLineDetails(line.id)
-                  }}
-                  className="space-y-2 p-3 sm:p-3 rounded-lg border bg-card hover:bg-accent active:bg-accent transition-colors cursor-pointer min-h-[60px] touch-manipulation"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <div
-                        className={`h-2 w-2 rounded-full flex-shrink-0 ${line.isRunning ? "bg-green-500 animate-pulse" : "bg-gray-400"}`}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-sm truncate">{line.name}</h3>
-                        <p className="text-xs text-muted-foreground truncate">{line.product}</p>
-                      </div>
-                    </div>
-                    <Badge variant={line.isRunning ? "default" : "secondary"} className="text-xs flex-shrink-0">
-                      {line.isRunning ? "Ativa" : "Parada"}
-                    </Badge>
+              {productionLines.filter((line) => line.isRunning).slice(0, 4).map((line) => (
+                <div key={line.id} className="flex items-center gap-2 rounded-lg border bg-card p-3">
+                  <div className="size-2 shrink-0 animate-pulse rounded-full bg-green-500" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{line.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">{line.product}</p>
                   </div>
-                  {line.isRunning && (
-                    <div className="space-y-1">
-                      <Progress value={line.progress} className="h-2" />
-                      <p className="text-xs text-right text-muted-foreground">
-                        {line.produced}/{line.target} ({Math.round(line.progress)}%)
-                      </p>
-                    </div>
-                  )}
+                  <span className="shrink-0 text-xs font-medium text-green-600">A operar</span>
                 </div>
               ))}
+              {productionLines.filter((line) => line.isRunning).length === 0 && (
+                <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">Nenhuma linha em produção corrente.</p>
+              )}
+              <p className="pt-1 text-center text-xs text-muted-foreground">Clique para ver os detalhes da semana corrente e da próxima.</p>
             </CardContent>
           </Card>
 

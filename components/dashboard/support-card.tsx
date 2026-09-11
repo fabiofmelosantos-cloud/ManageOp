@@ -56,14 +56,14 @@ export function SupportCard() {
 
   return <Dialog open={open} onOpenChange={setOpen}>
     <DialogTrigger asChild>
-      <Card className="group cursor-pointer border-primary/20 transition-colors hover:border-primary/50 hover:shadow-md">
-        <CardContent className="flex min-h-28 items-center gap-4 p-5">
-          <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><LifeBuoy className="size-6" aria-hidden="true" /></span>
-          <span className="min-w-0"><CardTitle className="text-base">Suporte</CardTitle><span className="mt-1 block text-sm text-muted-foreground">Abrir máscara e gerir tarefas</span></span>
+      <Card className="group aspect-square cursor-pointer border-primary/20 transition-colors hover:border-primary/50 hover:shadow-md">
+        <CardContent className="flex h-full flex-col items-center justify-center gap-2 p-2 text-center">
+          <LifeBuoy className="size-8 text-primary" aria-hidden="true" />
+          <CardTitle className="text-xs sm:text-sm">Suporte</CardTitle>
         </CardContent>
       </Card>
     </DialogTrigger>
-    <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+    <DialogContent className="max-h-[90vh] max-w-6xl overflow-y-auto">
       <DialogHeader><DialogTitle className="flex items-center gap-2"><LifeBuoy className="size-5 text-primary" />Máscara de suporte</DialogTitle><DialogDescription>Adicione produtos e valide cada tarefa assim que estiver concluída.</DialogDescription></DialogHeader>
       <div className="flex flex-col gap-6">
         <form onSubmit={addTask} className="grid gap-3 rounded-xl border bg-muted/20 p-4 sm:grid-cols-2">
@@ -75,7 +75,7 @@ export function SupportCard() {
           {error && <p className="text-sm text-destructive sm:col-span-2" role="alert">{error}</p>}
           <Button type="submit" disabled={saving} className="sm:col-span-2"><Plus data-icon="inline-start" />{saving ? "A guardar..." : "Adicionar produto"}</Button>
         </form>
-        <section className="flex flex-col gap-3" aria-labelledby="support-task-list-title"><div className="flex items-center gap-2"><ClipboardList className="size-4 text-muted-foreground" /><h3 id="support-task-list-title" className="text-sm font-semibold">Lista de tarefas</h3></div>{tasks.length === 0 ? <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">Nenhum registo de suporte.</p> : <div className="flex flex-col gap-2">{tasks.map((task) => <article key={task.id} className={`grid gap-3 rounded-xl border p-4 transition-colors sm:grid-cols-[1.3fr_1fr_1fr_1.2fr_auto] ${task.completed ? "border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100" : "bg-background"}`}><div><p className="font-semibold">{task.product}</p><p className="text-sm opacity-75">Saco: {task.bagMeasure}</p></div><p className="text-sm"><span className="opacity-70">A colar:</span> {task.quantityToLabel}</p><p className="text-sm"><span className="opacity-70">Já colada:</span> {task.quantityLabeled}</p><p className="text-sm"><span className="opacity-70">Operador:</span> {task.operatorName}</p><Button type="button" size="sm" variant={task.completed ? "secondary" : "outline"} onClick={() => void toggleCompleted(task)} className="gap-2"><Check data-icon="inline-start" />{task.completed ? "Concluída" : "Validar"}</Button><Badge variant={task.completed ? "default" : "secondary"} className={task.completed ? "bg-emerald-600 text-white hover:bg-emerald-600" : ""}>{task.completed ? "Concluída" : "Pendente"}</Badge></article>)}</div>}</section>
+        <section className="flex flex-col gap-3" aria-labelledby="support-task-list-title"><div className="flex items-center gap-2"><ClipboardList className="size-4 text-muted-foreground" /><h3 id="support-task-list-title" className="text-sm font-semibold">Lista de tarefas</h3></div>{tasks.length === 0 ? <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">Nenhum registo de suporte.</p> : <div className="flex max-w-full gap-3 overflow-x-auto pb-2">{tasks.map((task) => <article key={task.id} className={`flex min-w-[260px] shrink-0 flex-col gap-3 rounded-xl border p-4 transition-colors ${task.completed ? "border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100" : "bg-background"}`}><div><p className="font-semibold">{task.product}</p><p className="text-sm opacity-75">Saco: {task.bagMeasure}</p></div><div className="grid gap-1 text-sm"><p><span className="opacity-70">A colar:</span> {task.quantityToLabel}</p><p><span className="opacity-70">Já colada:</span> {task.quantityLabeled}</p><p><span className="opacity-70">Operador:</span> {task.operatorName}</p></div><div className="flex items-center justify-between gap-2"><Button type="button" size="sm" variant={task.completed ? "secondary" : "outline"} onClick={() => void toggleCompleted(task)} className="gap-2"><Check data-icon="inline-start" />{task.completed ? "Concluída" : "Validar"}</Button><Badge variant={task.completed ? "default" : "secondary"} className={task.completed ? "bg-emerald-600 text-white hover:bg-emerald-600" : ""}>{task.completed ? "Concluída" : "Pendente"}</Badge></div></article>)}</div>}</section>
       </div>
     </DialogContent>
   </Dialog>

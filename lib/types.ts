@@ -29,7 +29,8 @@ export interface Product {
 }
 
 export type StockCategory = "raw_material" | "packaging"
-export type MaterialRequestStatus = "requested" | "approved" | "transferred" | "returned"
+export type MaterialRequestStatus = "requested" | "approved" | "transferred" | "in_production" | "returned"
+export type MaterialLocation = "warehouse" | "intermediate" | "production"
 
 export interface StockItem {
   id: string

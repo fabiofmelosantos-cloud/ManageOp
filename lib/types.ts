@@ -35,7 +35,7 @@ export type MaterialLocation = "warehouse" | "intermediate" | "production"
 export interface StockItem {
   id: string
   name: string
-  internalCode: "MP" | "ME"
+  internalCode: string
   category: StockCategory
   unit: string
   quantity: number

@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import Link from "next/link"
-import { Factory, Users, TrendingUp, AlertCircle, Boxes, CalendarDays } from "lucide-react"
+import { Factory, Users, TrendingUp, AlertCircle, Boxes, CalendarDays, Clock3, LifeBuoy, ListTodo, Palmtree } from "lucide-react"
 import { useDateContext } from "@/components/layout/app-header"
 import { getSupabase } from "@/lib/supabase-client"
 
@@ -402,7 +402,7 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
           <Link href="/bom" className="group block">
             <Card className="aspect-square border-primary/20 transition-all hover:border-primary/50 hover:shadow-lg active:scale-[0.98]">
               <CardContent className="flex h-full flex-col items-center justify-center gap-2 p-3 text-center sm:p-4">
@@ -425,6 +425,10 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </Link>
+          <Link href="/schedules" className="group block"><Card className="aspect-square border-primary/20 transition-all hover:border-primary/50 hover:shadow-lg active:scale-[0.98]"><CardContent className="flex h-full flex-col items-center justify-center gap-2 p-2 text-center"><Clock3 className="size-8 text-primary" aria-hidden="true" /><CardTitle className="text-xs sm:text-sm">Horário</CardTitle><p className="text-[11px] text-muted-foreground">Escalas</p></CardContent></Card></Link>
+          <Link href="/hr" className="group block"><Card className="aspect-square border-primary/20 transition-all hover:border-primary/50 hover:shadow-lg active:scale-[0.98]"><CardContent className="flex h-full flex-col items-center justify-center gap-2 p-2 text-center"><Palmtree className="size-8 text-primary" aria-hidden="true" /><CardTitle className="text-xs sm:text-sm">Férias</CardTitle><p className="text-[11px] text-muted-foreground">Gestão de férias</p></CardContent></Card></Link>
+          <Card aria-disabled="true" className="aspect-square cursor-not-allowed opacity-65"><CardContent className="flex h-full flex-col items-center justify-center gap-2 p-2 text-center"><LifeBuoy className="size-8 text-muted-foreground" aria-hidden="true" /><CardTitle className="text-xs sm:text-sm">Suporte</CardTitle><p className="text-[11px] text-muted-foreground">Em breve</p></CardContent></Card>
+          <Card aria-disabled="true" className="aspect-square cursor-not-allowed opacity-65"><CardContent className="flex h-full flex-col items-center justify-center gap-2 p-2 text-center"><ListTodo className="size-8 text-muted-foreground" aria-hidden="true" /><CardTitle className="text-xs sm:text-sm">Tarefas</CardTitle><p className="text-[11px] text-muted-foreground">Em breve</p></CardContent></Card>
         </div>
 
         <Dialog open={!!selectedWorkerStatus} onOpenChange={() => setSelectedWorkerStatus(null)}>

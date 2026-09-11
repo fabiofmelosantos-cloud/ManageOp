@@ -25,7 +25,11 @@ export function FinishedProductsPage() {
   async function ship(id: string) {
     setError("")
     const data = shipping[id]
-    if (!data || !data.date || !data.quantity || !data.lot.trim() || !data.pallet.trim()) {
+    const shippedDate = String(data?.date ?? "").trim()
+    const shippedQuantity = Number(data?.quantity ?? 0)
+    const shippedLot = String(data?.lot ?? "").trim()
+    const shippedPalletNumber = String(data?.pallet ?? "").trim()
+    if (!shippedDate || !Number.isFinite(shippedQuantity) || shippedQuantity <= 0 || !shippedLot || !shippedPalletNumber) {
       setError("Preencha a data, quantidade, lote e número da palete antes de expedir.")
       return
     }
@@ -37,10 +41,10 @@ export function FinishedProductsPage() {
         body: JSON.stringify({
           id,
           action: "ship",
-          shippedAt: data.date,
-          shippedQuantity: Number(data.quantity),
-          shippedLot: data.lot.trim(),
-          shippedPalletNumber: data.pallet.trim(),
+          shippedAt: shippedDate,
+          shippedQuantity,
+          shippedLot,
+          shippedPalletNumber,
         }),
       })
       if (!response.ok) {

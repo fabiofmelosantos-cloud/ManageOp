@@ -34,9 +34,8 @@ export function WorkerImporter({ specialties, existingWorkers, onImport }: Worke
 
   const validateShiftType = (shift: string): ShiftType | null => {
     const normalized = shift.toLowerCase().trim();
-    if (normalized === 'morning' || normalized === 'manhã' || normalized === 'manha') return 'morning';
-    if (normalized === 'afternoon' || normalized === 'tarde') return 'afternoon';
-    if (normalized === 'night' || normalized === 'noite') return 'night';
+    if (normalized === 'morning' || normalized === 'turno 1' || normalized === 'turno1' || normalized === 'manhã' || normalized === 'manha') return 'morning';
+    if (normalized === 'afternoon' || normalized === 'turno 2' || normalized === 'turno2' || normalized === 'tarde') return 'afternoon';
     return null;
   };
 
@@ -157,7 +156,7 @@ export function WorkerImporter({ specialties, existingWorkers, onImport }: Worke
 
         // Se não especificou turnos, assume todos
         if (availableShifts.length === 0) {
-          availableShifts.push('morning', 'afternoon', 'night');
+          availableShifts.push('morning', 'afternoon');
         }
 
         // Parse padrão de escala
@@ -225,8 +224,8 @@ export function WorkerImporter({ specialties, existingWorkers, onImport }: Worke
   const downloadTemplate = () => {
     const template = [
       'nome;matricula;email;telefone;especialidades;turnos;escala',
-      'João Silva;12345;joao@email.com;123456789;Operador|Manutenção;manhã|tarde;5x2',
-      'Maria Santos;67890;maria@email.com;987654321;Supervisor;manhã|tarde|noite;5x2-fixo',
+      'João Silva;12345;joao@email.com;123456789;Operador|Manutenção;turno 1|turno 2;5x2',
+      'Maria Santos;67890;maria@email.com;987654321;Supervisor;turno 1|turno 2;5x2-fixo',
     ].join('\n');
 
     const blob = new Blob([template], { type: 'text/csv' });
@@ -298,7 +297,7 @@ export function WorkerImporter({ specialties, existingWorkers, onImport }: Worke
                   <li>Colunas opcionais: email, telefone, especialidades, turnos, escala</li>
                   <li>Aceita vírgula (,), ponto e vírgula (;), tab ou pipe (|) como separador</li>
                   <li>Especialidades e turnos separados por ponto e vírgula ou pipe (;|)</li>
-                  <li>Turnos: manhã/morning, tarde/afternoon, noite/night</li>
+                  <li>Turnos: Turno 1/morning ou Turno 2/afternoon</li>
                   <li>Escala: 5x2, 4x2, 5x2-fixo/seg-sex</li>
                   <li>Trabalhadores com matrícula duplicada serão ignorados</li>
                 </ul>

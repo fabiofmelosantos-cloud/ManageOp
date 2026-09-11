@@ -50,7 +50,7 @@ function shouldWorkerWork(workerState: WorkerState, currentDate: Date): boolean 
 }
 
 function getNextShift(currentShift: ShiftType): ShiftType {
-  const shiftRotation: ShiftType[] = ['morning', 'afternoon', 'night'];
+  const shiftRotation: ShiftType[] = ['morning', 'afternoon'];
   const currentIndex = shiftRotation.indexOf(currentShift);
   return shiftRotation[(currentIndex + 1) % shiftRotation.length];
 }
@@ -399,7 +399,7 @@ export function validateScheduleGeneration(
   }
 
   // Verificar se há trabalhadores suficientes para cada turno
-  const shifts: ShiftType[] = ['morning', 'afternoon', 'night'];
+  const shifts: ShiftType[] = ['morning', 'afternoon'];
   shifts.forEach(shift => {
     const workersForShift = workers.filter(w => w.availableShifts.includes(shift));
     if (workersForShift.length === 0) {

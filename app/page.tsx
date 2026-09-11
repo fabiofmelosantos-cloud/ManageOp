@@ -6,9 +6,12 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Factory, Users, TrendingUp, AlertCircle } from "lucide-react"
+import Link from "next/link"
+import { Factory, Users, TrendingUp, AlertCircle, Boxes, CalendarDays, Clock3, LifeBuoy, ListTodo, Palmtree } from "lucide-react"
 import { useDateContext } from "@/components/layout/app-header"
 import { getSupabase } from "@/lib/supabase-client"
+import { SupportCard } from "@/components/dashboard/support-card"
+import { FinishedProductsCard } from "@/components/dashboard/finished-products-card"
 
 type WorkerDetail = {
   id: string
@@ -33,7 +36,7 @@ type LineDetail = {
 
 export default function DashboardPage() {
   const { selectedDate } = useDateContext()
-  const [selectedShift, setSelectedShift] = useState<"morning" | "afternoon" | "night">("morning")
+  const [selectedShift, setSelectedShift] = useState<"morning" | "afternoon">("morning")
 
   const [selectedWorkerStatus, setSelectedWorkerStatus] = useState<string | null>(null)
   const [selectedLine, setSelectedLine] = useState<string | null>(null)
@@ -42,10 +45,11 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false)
 
   const [productionLines, setProductionLines] = useState<any[]>([])
+  const [weeklyLineCounts, setWeeklyLineCounts] = useState({ current: 0, next: 0 })
   const [workerStats, setWorkerStats] = useState<any>({
     morning: { working: 0, absent: 0, dc: 0, vacation: 0 },
     afternoon: { working: 0, absent: 0, dc: 0, vacation: 0 },
-    night: { working: 0, absent: 0, dc: 0, vacation: 0 },
+
   })
 
   useEffect(() => {
@@ -99,6 +103,16 @@ export default function DashboardPage() {
       setProductionLines(Array.from(linesMap.values()))
     }
 
+    const { loadWeeklyPlans, getWeeklyPlans } = await import("@/lib/storage")
+    await loadWeeklyPlans()
+    const plan = getWeeklyPlans().at(-1)
+    const weekStart = new Date(selectedDate)
+    weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7))
+    const nextStart = new Date(weekStart)
+    nextStart.setDate(nextStart.getDate() + 7)
+    const countLines = (start: Date) => new Set((plan?.days ?? []).filter((day: any) => { const date = new Date(day.date); const end = new Date(start); end.setDate(end.getDate() + 7); return date >= start && date < end }).flatMap((day: any) => day.shifts?.flatMap((shift: any) => shift.entries?.map((entry: any) => entry.lineId) ?? []) ?? [])).size
+    setWeeklyLineCounts({ current: countLines(weekStart), next: countLines(nextStart) })
+
     // Carregar estatísticas de trabalhadores
     await loadWorkerStats()
   }
@@ -128,11 +142,11 @@ export default function DashboardPage() {
     const stats = {
       morning: { working: 0, absent: 0, dc: 0, vacation: 0 },
       afternoon: { working: 0, absent: 0, dc: 0, vacation: 0 },
-      night: { working: 0, absent: 0, dc: 0, vacation: 0 },
+  
     }
 
     scheduleDays?.forEach((day: any) => {
-      const shift = day.shift as "morning" | "afternoon" | "night"
+      const shift = day.shift as "morning" | "afternoon"
       if (stats[shift]) {
         stats[shift].working += day.shift_assignments?.length || 0
       }
@@ -157,7 +171,6 @@ export default function DashboardPage() {
     const shiftMap = {
       morning: "morning",
       afternoon: "afternoon",
-      night: "night",
     }
 
     if (status === "working") {
@@ -273,7 +286,29 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2">
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow active:scale-[0.98]">
+          <Card
+            role="button"
+            tabIndex={0}
+            aria-label="Ver detalhe das linhas de produção"
+            onClick={() => {
+              const firstRunningLine = productionLines.find((line) => line.isRunning) ?? productionLines[0]
+              if (firstRunningLine) {
+                setSelectedLine(firstRunningLine.id)
+                loadLineDetails(firstRunningLine.id)
+              }
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault()
+                const firstRunningLine = productionLines.find((line) => line.isRunning) ?? productionLines[0]
+                if (firstRunningLine) {
+                  setSelectedLine(firstRunningLine.id)
+                  loadLineDetails(firstRunningLine.id)
+                }
+              }
+            }}
+            className="cursor-pointer transition-shadow hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]"
+          >
             <CardHeader className="pb-2 sm:pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
@@ -281,44 +316,25 @@ export default function DashboardPage() {
                   Linhas de Produção
                 </CardTitle>
                 <Badge variant="outline" className="text-xs">
-                  {productionLines.filter((l) => l.isRunning).length}/{productionLines.length}
+                  {productionLines.filter((line) => line.isRunning).length} em produção
                 </Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-2 sm:space-y-3">
-              {productionLines.slice(0, 3).map((line) => (
-                <div
-                  key={line.id}
-                  onClick={() => {
-                    setSelectedLine(line.id)
-                    loadLineDetails(line.id)
-                  }}
-                  className="space-y-2 p-3 sm:p-3 rounded-lg border bg-card hover:bg-accent active:bg-accent transition-colors cursor-pointer min-h-[60px] touch-manipulation"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <div
-                        className={`h-2 w-2 rounded-full flex-shrink-0 ${line.isRunning ? "bg-green-500 animate-pulse" : "bg-gray-400"}`}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-sm truncate">{line.name}</h3>
-                        <p className="text-xs text-muted-foreground truncate">{line.product}</p>
-                      </div>
-                    </div>
-                    <Badge variant={line.isRunning ? "default" : "secondary"} className="text-xs flex-shrink-0">
-                      {line.isRunning ? "Ativa" : "Parada"}
-                    </Badge>
+              {productionLines.filter((line) => line.isRunning).slice(0, 4).map((line) => (
+                <div key={line.id} className="flex items-center gap-2 rounded-lg border bg-card p-3">
+                  <div className="size-2 shrink-0 animate-pulse rounded-full bg-green-500" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{line.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">{line.product}</p>
                   </div>
-                  {line.isRunning && (
-                    <div className="space-y-1">
-                      <Progress value={line.progress} className="h-2" />
-                      <p className="text-xs text-right text-muted-foreground">
-                        {line.produced}/{line.target} ({Math.round(line.progress)}%)
-                      </p>
-                    </div>
-                  )}
+                  <span className="shrink-0 text-xs font-medium text-green-600">A operar</span>
                 </div>
               ))}
+              {productionLines.filter((line) => line.isRunning).length === 0 && (
+                <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">Nenhuma linha em produção corrente.</p>
+              )}
+              <p className="pt-1 text-center text-xs text-muted-foreground">Clique para ver os detalhes da semana corrente e da próxima.</p>
             </CardContent>
           </Card>
 
@@ -331,15 +347,12 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-2 sm:space-y-3">
               <Tabs value={selectedShift} onValueChange={(v) => setSelectedShift(v as any)}>
-                <TabsList className="grid w-full grid-cols-3 h-10 sm:h-11 p-1">
+                <TabsList className="grid w-full grid-cols-2 h-10 sm:h-11 p-1">
                   <TabsTrigger value="morning" className="text-xs sm:text-sm px-2 sm:px-3">
-                    Manhã
+                    Turno 1
                   </TabsTrigger>
                   <TabsTrigger value="afternoon" className="text-xs sm:text-sm px-2 sm:px-3">
-                    Tarde
-                  </TabsTrigger>
-                  <TabsTrigger value="night" className="text-xs sm:text-sm px-2 sm:px-3">
-                    Noite
+                    Turno 2
                   </TabsTrigger>
                 </TabsList>
 
@@ -401,6 +414,36 @@ export default function DashboardPage() {
           </Card>
         </div>
 
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
+          <Link href="/bom" className="group block">
+            <Card className="aspect-square border-primary/20 transition-all hover:border-primary/50 hover:shadow-lg active:scale-[0.98]">
+              <CardContent className="flex h-full flex-col items-center justify-center gap-2 p-3 text-center">
+                <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground size-10">
+                  <Boxes aria-hidden="true" />
+                </div>
+                <CardTitle className="text-sm">BOM</CardTitle>
+                <p className="text-xs text-muted-foreground">Materiais e stock</p>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/planning" className="group block">
+            <Card className="aspect-square border-primary/20 transition-all hover:border-primary/50 hover:shadow-lg active:scale-[0.98]">
+              <CardContent className="flex h-full flex-col items-center justify-center gap-2 p-3 text-center">
+                <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground size-10">
+                  <CalendarDays aria-hidden="true" />
+                </div>
+                <CardTitle className="text-xs sm:text-sm">Planeamento</CardTitle>
+                <p className="text-xs text-muted-foreground">Planos de produção</p>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/schedules" className="group block"><Card className="aspect-square border-primary/20 transition-all hover:border-primary/50 hover:shadow-lg active:scale-[0.98]"><CardContent className="flex h-full flex-col items-center justify-center gap-2 p-2 text-center"><Clock3 className="size-8 text-primary" aria-hidden="true" /><CardTitle className="text-xs sm:text-sm">Horário</CardTitle><p className="text-[11px] text-muted-foreground">Escalas</p></CardContent></Card></Link>
+          <Link href="/hr" className="group block"><Card className="aspect-square border-primary/20 transition-all hover:border-primary/50 hover:shadow-lg active:scale-[0.98]"><CardContent className="flex h-full flex-col items-center justify-center gap-2 p-2 text-center"><Palmtree className="size-8 text-primary" aria-hidden="true" /><CardTitle className="text-xs sm:text-sm">Férias</CardTitle><p className="text-[11px] text-muted-foreground">Gestão de férias</p></CardContent></Card></Link>
+          <SupportCard />
+          <FinishedProductsCard />
+          <Card aria-disabled="true" className="aspect-square cursor-not-allowed opacity-65"><CardContent className="flex h-full flex-col items-center justify-center gap-2 p-3 text-center"><ListTodo className="size-8 text-muted-foreground" aria-hidden="true" /><CardTitle className="text-xs sm:text-sm">Tarefas</CardTitle><p className="text-[11px] text-muted-foreground">Em breve</p></CardContent></Card>
+        </div>
+
         <Dialog open={!!selectedWorkerStatus} onOpenChange={() => setSelectedWorkerStatus(null)}>
           <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
@@ -411,7 +454,7 @@ export default function DashboardPage() {
                 {selectedWorkerStatus === "vacation" && "Férias"}
               </DialogTitle>
               <DialogDescription className="text-sm">
-                Turno: {selectedShift === "morning" ? "Manhã" : selectedShift === "afternoon" ? "Tarde" : "Noite"}
+                Turno: {selectedShift === "morning" ? "Turno 1" : "Turno 2"}
               </DialogDescription>
             </DialogHeader>
 

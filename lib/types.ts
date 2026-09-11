@@ -1,4 +1,4 @@
-export type ShiftType = "morning" | "afternoon" | "night"
+export type ShiftType = "morning" | "afternoon"
 
 export type SchedulePattern = "5x2" | "4x2" | "5x2-fixed"
 
@@ -26,6 +26,57 @@ export interface Product {
   id: string
   name: string
   description?: string
+}
+
+export type StockCategory = "raw_material" | "packaging"
+export type MaterialRequestStatus = "requested" | "approved" | "transferred" | "in_production" | "returned"
+export type MaterialLocation = "warehouse" | "intermediate" | "production"
+
+export interface StockItem {
+  id: string
+  name: string
+  internalCode: string
+  category: StockCategory
+  unit: string
+  quantity: number
+  lot: string
+  expiryDate: string
+  createdAt: string
+}
+
+export interface FinishedProduct {
+  id: string
+  palletNumber: string
+  product: string
+  quantity: number
+  unit: string
+  lot: string
+  expiryDate: string
+  productionDate: string
+  channel: "HQ" | "B2B"
+  createdAt: string
+  warehouseValidatedAt?: string
+  warehouseValidatedBy?: string
+  shippedAt?: string
+  shippedQuantity?: number
+  shippedLot?: string
+  shippedPalletNumber?: string
+}
+
+export interface MaterialRequest {
+  id: string
+  stockItemId: string
+  materialName: string
+  quantity: number
+  unit: string
+  requester: string
+  status: MaterialRequestStatus
+  requestedAt: string
+  approvedAt?: string
+  transferredAt?: string
+  returnedQuantity?: number
+  returnedAt?: string
+  intermediateQuantity?: number
 }
 
 export interface SpecialtyRequirement {

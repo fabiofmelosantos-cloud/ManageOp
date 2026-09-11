@@ -28,9 +28,8 @@ interface WorkerListProps {
 }
 
 const shiftLabels: Record<ShiftType, string> = {
-  morning: 'Manhã',
-  afternoon: 'Tarde',
-  night: 'Noite',
+  morning: 'Turno 1',
+  afternoon: 'Turno 2',
 };
 
 const patternLabels = {

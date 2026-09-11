@@ -12,15 +12,13 @@ interface ScheduleCalendarViewProps {
 }
 
 const shiftLabels: Record<ShiftType, string> = {
-  morning: 'M',
-  afternoon: 'T',
-  night: 'N',
+  morning: 'T1',
+  afternoon: 'T2',
 };
 
 const shiftColors: Record<ShiftType, string> = {
   morning: 'bg-amber-500',
   afternoon: 'bg-blue-500',
-  night: 'bg-purple-500',
 };
 
 export function ScheduleCalendarView({

@@ -74,7 +74,7 @@ export function ScheduleGeneratorForm({
     onGenerate({ 
       startDate, 
       endDate, 
-      shifts: ['morning', 'afternoon', 'night']
+      shifts: ['morning', 'afternoon']
     });
   };
 
@@ -180,7 +180,7 @@ export function ScheduleGeneratorForm({
                 Período: <span className="font-semibold text-foreground">{totalDays} dias</span>
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Serão gerados os 3 turnos (Manhã, Tarde e Noite) para cada dia
+                Serão gerados os 2 turnos (Turno 1 e Turno 2) para cada dia
               </p>
             </div>
           )}

@@ -21,6 +21,9 @@ const cache: {
   productionTracking: ProductionTracking[] | null
   shiftReports: any[] | null
   generatedTasks: import("./types").GeneratedTask[] | null
+  stockItems: import("./types").StockItem[] | null
+  materialRequests: import("./types").MaterialRequest[] | null
+  finishedProducts: import("./types").FinishedProduct[] | null
 } = {
   workers: null,
   productionLines: null,
@@ -31,6 +34,9 @@ const cache: {
   productionTracking: null,
   shiftReports: null,
   generatedTasks: null,
+  stockItems: null,
+  materialRequests: null,
+  finishedProducts: null,
 }
 
 async function readFromNeon<T>(key: string, defaultValue: T): Promise<T> {
@@ -242,6 +248,76 @@ export async function deleteProduct(id: string): Promise<boolean> {
 export async function saveProducts(products: Product[]): Promise<void> {
   cache.products = products
   await writeToNeon("products", products)
+}
+
+export async function clearWorkers(): Promise<void> {
+  cache.workers = []
+  await writeToNeon("workers", [])
+}
+
+export async function clearProducts(): Promise<void> {
+  cache.products = []
+  await writeToNeon("products", [])
+}
+
+export type SpreadsheetSettings = {
+  url: string
+  updatedAt: string
+}
+
+export async function loadSpreadsheetSettings(): Promise<SpreadsheetSettings> {
+  return readFromNeon<SpreadsheetSettings>("spreadsheet_settings", { url: "", updatedAt: "" })
+}
+
+export async function saveSpreadsheetSettings(url: string): Promise<SpreadsheetSettings> {
+  const settings = { url: url.trim(), updatedAt: new Date().toISOString() }
+  await writeToNeon("spreadsheet_settings", settings)
+  return settings
+}
+
+export function getFinishedProducts(): import("./types").FinishedProduct[] {
+  return cache.finishedProducts || []
+}
+
+export async function loadFinishedProducts(): Promise<import("./types").FinishedProduct[]> {
+  const products = await readFromNeon<import("./types").FinishedProduct[]>("finished_products", [])
+  cache.finishedProducts = products
+  return products
+}
+
+export async function saveFinishedProducts(products: import("./types").FinishedProduct[]): Promise<void> {
+  cache.finishedProducts = products
+  await writeToNeon("finished_products", products)
+}
+
+export function getStockItems(): import("./types").StockItem[] {
+  return cache.stockItems || []
+}
+
+export async function loadStockItems(): Promise<import("./types").StockItem[]> {
+  const items = await readFromNeon<import("./types").StockItem[]>("stock_items", [])
+  cache.stockItems = items
+  return items
+}
+
+export async function saveStockItems(items: import("./types").StockItem[]): Promise<void> {
+  cache.stockItems = items
+  await writeToNeon("stock_items", items)
+}
+
+export function getMaterialRequests(): import("./types").MaterialRequest[] {
+  return cache.materialRequests || []
+}
+
+export async function loadMaterialRequests(): Promise<import("./types").MaterialRequest[]> {
+  const requests = await readFromNeon<import("./types").MaterialRequest[]>("material_requests", [])
+  cache.materialRequests = requests
+  return requests
+}
+
+export async function saveMaterialRequests(requests: import("./types").MaterialRequest[]): Promise<void> {
+  cache.materialRequests = requests
+  await writeToNeon("material_requests", requests)
 }
 
 export function getGeneratedTasks(): import("./types").GeneratedTask[] {

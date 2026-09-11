@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
-import { CalendarIcon, Filter, Maximize2 } from "lucide-react"
+import { CalendarIcon, Filter, Maximize2, WandSparkles } from "lucide-react"
 import type { Worker, ProductionLine, Product, Schedule, ShiftType } from "@/lib/types"
 
 export default function SchedulesViewPage() {
@@ -46,6 +46,17 @@ export default function SchedulesViewPage() {
 
     loadData()
   }, [mounted])
+
+  const handleGenerateSchedule = async () => {
+    if (!workers.length || !productionLines.length) { alert("Adicione trabalhadores e linhas de produção antes de gerar o horário."); return }
+    const { generateSchedule } = await import("@/lib/schedule-generator")
+    const { addSchedule, getSpecialties } = await import("@/lib/storage")
+    const start = new Date(); start.setDate(start.getDate() - ((start.getDay() + 6) % 7))
+    const end = new Date(start); end.setDate(end.getDate() + 6)
+    const days = generateSchedule({ startDate: start.toISOString().slice(0, 10), endDate: end.toISOString().slice(0, 10), shifts: ["morning"] }, workers, productionLines, undefined, getSpecialties())
+    const schedule = await addSchedule({ name: `Horário semanal · ${start.toLocaleDateString("pt-PT")}`, startDate: start.toISOString().slice(0, 10), endDate: end.toISOString().slice(0, 10), days })
+    setSavedSchedules((current) => [schedule, ...current]); setViewingSchedule(schedule)
+  }
 
   const handleDeleteSchedule = async (id: string) => {
     if (confirm("Tem certeza que deseja excluir esta escala?")) {
@@ -102,6 +113,8 @@ export default function SchedulesViewPage() {
           </h1>
           <p className="text-sm sm:text-lg text-muted-foreground mt-2 sm:mt-3">Consulte as escalas guardadas</p>
         </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-semibold">Quadro semanal</h2><p className="text-sm text-muted-foreground">Geração automática com rotação semanal e almoço distribuído.</p></div><Button onClick={handleGenerateSchedule}><WandSparkles className="mr-2 size-4" />Gerar horário</Button></div>
 
         <ScheduleList
           schedules={savedSchedules}

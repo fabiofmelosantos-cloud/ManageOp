@@ -138,7 +138,7 @@ export function AttendanceConfirmation({
                   year: 'numeric', 
                   month: 'long', 
                   day: 'numeric' 
-                })} - Turno {selectedShift === 'morning' ? 'Manhã' : selectedShift === 'afternoon' ? 'Tarde' : 'Noite'}
+                })} - Turno {selectedShift === 'morning' ? 'Turno 1' : 'Turno 2'}
               </CardDescription>
             </div>
             {allLinesConfirmed && (

@@ -34,6 +34,7 @@ export type MaterialRequestStatus = "requested" | "approved" | "transferred" | "
 export interface StockItem {
   id: string
   name: string
+  internalCode: "MP" | "ME"
   category: StockCategory
   unit: string
   quantity: number
@@ -55,6 +56,7 @@ export interface MaterialRequest {
   transferredAt?: string
   returnedQuantity?: number
   returnedAt?: string
+  intermediateQuantity?: number
 }
 
 export interface SpecialtyRequirement {

@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useState } from "react"
 import { Check, ClipboardList, LifeBuoy, Plus } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -10,16 +11,19 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getSupabase } from "@/lib/supabase-client"
+import { loadStockItems } from "@/lib/storage"
+import type { StockItem } from "@/lib/types"
 
 type Worker = { id: string; name: string; employee_id?: string }
-type SupportTask = { id: string; product: string; bagMeasure: string; quantityToLabel: number; quantityLabeled: number; operatorName: string; createdAt: string; completed?: boolean }
-type FormState = { product: string; bagMeasure: string; quantityToLabel: string; quantityLabeled: string; operatorId: string }
+type SupportTask = { id: string; product: string; bagMeasure: string; internalCode: string; quantityToLabel: number; quantityLabeled: number; operatorName: string; createdAt: string; completed?: boolean }
+type FormState = { product: string; bagMeasure: string; internalCode: string; quantityToLabel: string; quantityLabeled: string; operatorId: string }
 
-const emptyForm: FormState = { product: "", bagMeasure: "", quantityToLabel: "", quantityLabeled: "", operatorId: "" }
+const emptyForm: FormState = { product: "", bagMeasure: "", internalCode: "", quantityToLabel: "", quantityLabeled: "", operatorId: "" }
 
-export function SupportCard() {
+export function SupportCard({ fullPage = false }: { fullPage?: boolean }) {
   const [open, setOpen] = useState(false)
   const [workers, setWorkers] = useState<Worker[]>([])
+  const [packagingItems, setPackagingItems] = useState<StockItem[]>([])
   const [tasks, setTasks] = useState<SupportTask[]>([])
   const [form, setForm] = useState<FormState>(emptyForm)
   const [saving, setSaving] = useState(false)
@@ -29,6 +33,7 @@ export function SupportCard() {
     void Promise.all([
       fetch("/api/support-tasks").then((response) => response.json()).then(setTasks),
       getSupabase().from("workers").select("id, name, employee_id").order("name").then(({ data }) => setWorkers(data ?? [])),
+      loadStockItems().then((items) => setPackagingItems(items.filter((item) => item.category === "packaging"))),
     ])
   }, [])
 
@@ -54,29 +59,24 @@ export function SupportCard() {
     setTasks((current) => current.map((item) => item.id === updated.id ? updated : item))
   }
 
-  return <Dialog open={open} onOpenChange={setOpen}>
-    <DialogTrigger asChild>
-      <Card className="group aspect-square border-primary/20 transition-all hover:border-primary/50 hover:shadow-lg active:scale-[0.98]">
-        <CardContent className="flex h-full flex-col items-center justify-center gap-2 p-2 text-center sm:p-3">
-          <LifeBuoy className="size-8 text-primary" aria-hidden="true" />
-          <CardTitle className="text-xs sm:text-sm">Suporte</CardTitle>
-        </CardContent>
-      </Card>
-    </DialogTrigger>
-    <DialogContent className="max-h-[90vh] max-w-6xl overflow-y-auto">
-      <DialogHeader><DialogTitle className="flex items-center gap-2"><LifeBuoy className="size-5 text-primary" />Máscara de suporte</DialogTitle><DialogDescription>Adicione produtos e valide cada tarefa assim que estiver concluída.</DialogDescription></DialogHeader>
+  const content = <div className={fullPage ? "min-h-screen bg-background p-4 sm:p-8" : ""}>
+      {fullPage && <div className="mx-auto mb-6 flex max-w-7xl items-center gap-3"><LifeBuoy className="size-8 text-primary" /><h1 className="text-3xl font-bold tracking-tight">SUPORTE</h1></div>}
+      <div className={fullPage ? "mx-auto max-w-7xl" : ""}>
       <div className="flex flex-col gap-6">
         <form onSubmit={addTask} className="grid gap-3 rounded-xl border bg-muted/20 p-4 sm:grid-cols-2">
           <div className="grid gap-1.5"><Label htmlFor="support-product">Produto</Label><Input id="support-product" value={form.product} onChange={(event) => setForm({ ...form, product: event.target.value })} required /></div>
           <div className="grid gap-1.5"><Label htmlFor="support-measure">Medida do saco</Label><Input id="support-measure" placeholder="Ex.: 25 kg" value={form.bagMeasure} onChange={(event) => setForm({ ...form, bagMeasure: event.target.value })} required /></div>
+          <div className="grid gap-1.5"><Label>Referência interna ME</Label><Select value={form.internalCode} onValueChange={(value) => { const item = packagingItems.find((entry) => entry.internalCode === value); setForm({ ...form, internalCode: value, bagMeasure: item?.unit ?? form.bagMeasure, product: form.product || item?.name || "" }) }}><SelectTrigger><SelectValue placeholder="Selecionar embalagem do stock" /></SelectTrigger><SelectContent>{packagingItems.map((item) => <SelectItem key={item.id} value={item.internalCode}>{item.internalCode} · {item.name}</SelectItem>)}</SelectContent></Select></div>
           <div className="grid gap-1.5"><Label htmlFor="support-to-label">Quantidade a colar</Label><Input id="support-to-label" type="number" min="0" value={form.quantityToLabel} onChange={(event) => setForm({ ...form, quantityToLabel: event.target.value })} required /></div>
           <div className="grid gap-1.5"><Label htmlFor="support-labeled">Quantidade já colada</Label><Input id="support-labeled" type="number" min="0" value={form.quantityLabeled} onChange={(event) => setForm({ ...form, quantityLabeled: event.target.value })} required /></div>
           <div className="grid gap-1.5 sm:col-span-2"><Label>Operador que executou a tarefa</Label><Select value={form.operatorId} onValueChange={(value) => setForm({ ...form, operatorId: value })}><SelectTrigger><SelectValue placeholder="Selecionar trabalhador" /></SelectTrigger><SelectContent>{workers.map((worker) => <SelectItem key={worker.id} value={worker.id}>{worker.name}{worker.employee_id ? ` · ${worker.employee_id}` : ""}</SelectItem>)}</SelectContent></Select></div>
           {error && <p className="text-sm text-destructive sm:col-span-2" role="alert">{error}</p>}
           <Button type="submit" disabled={saving} className="sm:col-span-2"><Plus data-icon="inline-start" />{saving ? "A guardar..." : "Adicionar produto"}</Button>
         </form>
-        <section className="flex flex-col gap-3" aria-labelledby="support-task-list-title"><div className="flex items-center gap-2"><ClipboardList className="size-4 text-muted-foreground" /><h3 id="support-task-list-title" className="text-sm font-semibold">Lista de tarefas</h3></div>{tasks.length === 0 ? <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">Nenhum registo de suporte.</p> : <div className="flex max-w-full gap-3 overflow-x-auto pb-2">{tasks.map((task) => <article key={task.id} className={`flex min-w-[260px] shrink-0 flex-col gap-3 rounded-xl border p-4 transition-colors ${task.completed ? "border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100" : "bg-background"}`}><div><p className="font-semibold">{task.product}</p><p className="text-sm opacity-75">Saco: {task.bagMeasure}</p></div><div className="grid gap-1 text-sm"><p><span className="opacity-70">A colar:</span> {task.quantityToLabel}</p><p><span className="opacity-70">Já colada:</span> {task.quantityLabeled}</p><p><span className="opacity-70">Operador:</span> {task.operatorName}</p></div><div className="flex items-center justify-between gap-2"><Button type="button" size="sm" variant={task.completed ? "secondary" : "outline"} onClick={() => void toggleCompleted(task)} className="gap-2"><Check data-icon="inline-start" />{task.completed ? "Concluída" : "Validar"}</Button><Badge variant={task.completed ? "default" : "secondary"} className={task.completed ? "bg-emerald-600 text-white hover:bg-emerald-600" : ""}>{task.completed ? "Concluída" : "Pendente"}</Badge></div></article>)}</div>}</section>
+        <section className="flex flex-col gap-3" aria-labelledby="support-task-list-title"><div className="flex items-center gap-2"><ClipboardList className="size-4 text-muted-foreground" /><h3 id="support-task-list-title" className="text-sm font-semibold">Lista de tarefas</h3></div>{tasks.length === 0 ? <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">Nenhum registo de suporte.</p> : <div className="flex max-w-full gap-3 overflow-x-auto pb-2">{tasks.map((task) => <article key={task.id} className={`flex min-w-[260px] shrink-0 flex-col gap-3 rounded-xl border p-4 transition-colors ${task.completed ? "border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100" : "bg-background"}`}><div><p className="font-semibold">{task.product}</p><p className="text-sm opacity-75">ME: {task.internalCode} · Saco: {task.bagMeasure}</p></div><div className="grid gap-1 text-sm"><p><span className="opacity-70">A colar:</span> {task.quantityToLabel}</p><p><span className="opacity-70">Já colada:</span> {task.quantityLabeled}</p><p><span className="opacity-70">Operador:</span> {task.operatorName}</p></div><div className="flex items-center justify-between gap-2"><Button type="button" size="sm" variant={task.completed ? "secondary" : "outline"} onClick={() => void toggleCompleted(task)} className="gap-2"><Check data-icon="inline-start" />{task.completed ? "Concluída" : "Validar"}</Button><Badge variant={task.completed ? "default" : "secondary"} className={task.completed ? "bg-emerald-600 text-white hover:bg-emerald-600" : ""}>{task.completed ? "Concluída" : "Pendente"}</Badge></div></article>)}</div>}</section>
       </div>
-    </DialogContent>
-  </Dialog>
+    </div></div>
+
+  if (fullPage) return content
+  return <Link href="/support" className="block"><Card className="group aspect-square border-primary/20 transition-all hover:border-primary/50 hover:shadow-lg active:scale-[0.98]"><CardContent className="flex h-full flex-col items-center justify-center gap-2 p-2 text-center sm:p-3"><LifeBuoy className="size-8 text-primary" aria-hidden="true" /><CardTitle className="text-xs sm:text-sm">Suporte</CardTitle></CardContent></Card></Link>
 }

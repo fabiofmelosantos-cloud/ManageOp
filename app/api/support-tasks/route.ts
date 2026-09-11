@@ -5,6 +5,7 @@ export type SupportTask = {
   id: string
   product: string
   bagMeasure: string
+  internalCode: string
   quantityToLabel: number
   quantityLabeled: number
   operatorId: string
@@ -39,12 +40,13 @@ export async function POST(request: Request) {
   const body = await request.json()
   const product = String(body.product ?? "").trim()
   const bagMeasure = String(body.bagMeasure ?? "").trim()
+  const internalCode = String(body.internalCode ?? "").trim()
   const operatorId = String(body.operatorId ?? "").trim()
   const operatorName = String(body.operatorName ?? "").trim()
   const quantityToLabel = Number(body.quantityToLabel)
   const quantityLabeled = Number(body.quantityLabeled)
 
-  if (!product || !bagMeasure || !operatorId || !operatorName || !Number.isFinite(quantityToLabel) || !Number.isFinite(quantityLabeled) || quantityToLabel < 0 || quantityLabeled < 0) {
+  if (!product || !bagMeasure || !internalCode || !operatorId || !operatorName || !Number.isFinite(quantityToLabel) || !Number.isFinite(quantityLabeled) || quantityToLabel < 0 || quantityLabeled < 0) {
     return NextResponse.json({ error: "Preencha todos os campos corretamente." }, { status: 400 })
   }
 
@@ -53,6 +55,7 @@ export async function POST(request: Request) {
     id: crypto.randomUUID(),
     product,
     bagMeasure,
+    internalCode,
     quantityToLabel,
     quantityLabeled,
     operatorId,

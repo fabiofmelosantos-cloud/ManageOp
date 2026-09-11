@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Factory, Users, TrendingUp, AlertCircle } from "lucide-react"
+import Link from "next/link"
+import { Factory, Users, TrendingUp, AlertCircle, Boxes } from "lucide-react"
 import { useDateContext } from "@/components/layout/app-header"
 import { getSupabase } from "@/lib/supabase-client"
 
@@ -400,6 +401,22 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        <Link href="/bom" className="group block">
+          <Card className="border-primary/20 transition-all hover:border-primary/50 hover:shadow-lg active:scale-[0.99]">
+            <CardContent className="flex items-center gap-4 p-5 sm:p-6">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                <Boxes aria-hidden="true" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <CardTitle className="text-base sm:text-lg">BOM</CardTitle>
+                <p className="mt-1 text-sm text-muted-foreground">Bill of Materials</p>
+                <p className="mt-2 text-xs text-muted-foreground">Consultar e gerir estruturas de materiais.</p>
+              </div>
+              <span className="text-sm font-medium text-primary" aria-hidden="true">Abrir</span>
+            </CardContent>
+          </Card>
+        </Link>
 
         <Dialog open={!!selectedWorkerStatus} onOpenChange={() => setSelectedWorkerStatus(null)}>
           <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto">

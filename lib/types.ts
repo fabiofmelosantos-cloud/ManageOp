@@ -28,6 +28,35 @@ export interface Product {
   description?: string
 }
 
+export type StockCategory = "raw_material" | "packaging"
+export type MaterialRequestStatus = "requested" | "approved" | "transferred" | "returned"
+
+export interface StockItem {
+  id: string
+  name: string
+  category: StockCategory
+  unit: string
+  quantity: number
+  lot: string
+  expiryDate: string
+  createdAt: string
+}
+
+export interface MaterialRequest {
+  id: string
+  stockItemId: string
+  materialName: string
+  quantity: number
+  unit: string
+  requester: string
+  status: MaterialRequestStatus
+  requestedAt: string
+  approvedAt?: string
+  transferredAt?: string
+  returnedQuantity?: number
+  returnedAt?: string
+}
+
 export interface SpecialtyRequirement {
   specialtyId: string // Mantido como specialtyId
   quantity: number

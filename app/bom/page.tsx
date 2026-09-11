@@ -1,7 +1,8 @@
 import Link from "next/link"
-import { ArrowLeft, Boxes, FileText } from "lucide-react"
+import { ArrowLeft, Boxes } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { StockManagement } from "@/components/bom/stock-management"
 
 export default function BomPage() {
   return (
@@ -32,15 +33,7 @@ export default function BomPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex min-h-48 flex-col items-center justify-center gap-3 rounded-lg border border-dashed bg-muted/20 p-6 text-center">
-              <FileText className="size-8 text-muted-foreground" aria-hidden="true" />
-              <div>
-                <h2 className="font-semibold">Nenhuma BOM criada</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  As estruturas de materiais dos produtos aparecerão aqui quando forem criadas.
-                </p>
-              </div>
-            </div>
+            <StockManagement />
           </CardContent>
         </Card>
       </div>

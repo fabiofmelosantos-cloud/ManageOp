@@ -1,4 +1,4 @@
-export type ShiftType = "morning" | "afternoon" | "night"
+export type ShiftType = "morning" | "afternoon"
 
 export type SchedulePattern = "5x2" | "4x2" | "5x2-fixed"
 

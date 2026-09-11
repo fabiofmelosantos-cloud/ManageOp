@@ -405,7 +405,7 @@ export function ScheduleBoardView({
                   )}
 
                   {weekDays.map((day) => {
-                    const shifts: ShiftType[] = ["morning", "afternoon", "night"]
+                    const shifts: ShiftType[] = ["morning", "afternoon"]
 
                     return shifts.map((shift) => {
                       const dayData = filteredDays.find((d) => d.date === day.date && d.shift === shift)
@@ -475,7 +475,7 @@ export function ScheduleBoardView({
                 TOTAL
               </td>
               {weekDays.map((day) => {
-                const shifts: ShiftType[] = ["morning", "afternoon", "night"]
+                const shifts: ShiftType[] = ["morning", "afternoon"]
 
                 return shifts.map((shift) => {
                   const dayData = filteredDays.find((d) => d.date === day.date && d.shift === shift)

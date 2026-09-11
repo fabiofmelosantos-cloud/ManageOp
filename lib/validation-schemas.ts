@@ -17,7 +17,7 @@ export const workerSchema = z.object({
     .max(20, "Número muito longo")
     .regex(/^[0-9]+$/, "Número deve conter apenas dígitos"),
   specialties: z.array(z.string().uuid()).min(1, "Selecione pelo menos uma especialidade"),
-  shifts: z.array(z.enum(["Manhã", "Tarde", "Noite"])).min(1, "Selecione pelo menos um turno"),
+  shifts: z.array(z.enum(["Turno 1", "Turno 2"])).min(1, "Selecione pelo menos um turno"),
   company: z.string().max(50, "Nome da empresa muito longo").optional(),
   companyColor: z
     .string()
@@ -62,7 +62,7 @@ export const scheduleSchema = z
       z.object({
         workerId: z.string().uuid(),
         productionLineId: z.string().uuid(),
-        shift: z.enum(["Manhã", "Tarde", "Noite"]),
+        shift: z.enum(["Turno 1", "Turno 2"]),
         date: z.string(),
         positionName: z.string().optional(),
         isTraining: z.boolean().optional(),
@@ -80,7 +80,7 @@ export const attendanceSchema = z.object({
   date: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: "Data inválida",
   }),
-  shift: z.enum(["Manhã", "Tarde", "Noite"]),
+  shift: z.enum(["Turno 1", "Turno 2"]),
   status: z.enum(["present", "absent", "late"]),
   productionLineId: z.string().uuid(),
   notes: z.string().max(500, "Notas muito longas").optional(),

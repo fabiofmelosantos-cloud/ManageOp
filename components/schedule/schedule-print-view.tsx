@@ -15,9 +15,8 @@ interface SchedulePrintViewProps {
 }
 
 const shiftLabels: Record<ShiftType, string> = {
-  morning: 'MANHÃ',
-  afternoon: 'TARDE',
-  night: 'NOITE',
+  morning: 'TURNO 1',
+  afternoon: 'TURNO 2',
 };
 
 export function SchedulePrintView({

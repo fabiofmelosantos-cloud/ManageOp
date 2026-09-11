@@ -65,11 +65,9 @@ export function FinalReportGenerator({
   const getShiftLabel = () => {
     switch (shift) {
       case "morning":
-        return "Manha (08:00-16:00)"
+        return "Turno 1 (08:00-16:00)"
       case "afternoon":
-        return "Tarde (16:00-00:00)"
-      case "night":
-        return "Noite (00:00-08:00)"
+        return "Turno 2 (16:00-00:00)"
     }
   }
 

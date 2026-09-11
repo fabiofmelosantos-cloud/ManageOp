@@ -102,7 +102,7 @@ export default function CoordinatorPage() {
     } else if (hour >= 16 && hour < 24) {
       setCurrentShift("afternoon")
     } else {
-      setCurrentShift("night")
+      setCurrentShift("afternoon")
     }
   }, [])
 
@@ -228,9 +228,6 @@ export default function CoordinatorPage() {
                       </SelectItem>
                       <SelectItem value="afternoon" className="min-h-[44px]">
                         {getShiftLabel("afternoon")}
-                      </SelectItem>
-                      <SelectItem value="night" className="min-h-[44px]">
-                        {getShiftLabel("night")}
                       </SelectItem>
                     </SelectContent>
                   </Select>

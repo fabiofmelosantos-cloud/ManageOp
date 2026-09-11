@@ -414,7 +414,7 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
           <Link href="/bom" className="group block">
             <Card className="aspect-square border-primary/20 transition-all hover:border-primary/50 hover:shadow-lg active:scale-[0.98]">
               <CardContent className="flex h-full flex-col items-center justify-center gap-2 p-3 text-center">
@@ -432,7 +432,7 @@ export default function DashboardPage() {
                 <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground size-10">
                   <CalendarDays aria-hidden="true" />
                 </div>
-                <CardTitle className="text-sm sm:text-base">Planeamento</CardTitle>
+                <CardTitle className="text-xs sm:text-sm">Planeamento</CardTitle>
                 <p className="text-xs text-muted-foreground">Planos de produção</p>
               </CardContent>
             </Card>

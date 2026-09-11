@@ -50,6 +50,7 @@
     "clsx": "^2.1.1",
     "cmdk": "latest",
     "date-fns": "latest",
+    "docx": "^9.7.1",
     "embla-carousel-react": "latest",
     "fs": "0.0.1-security",
     "input-otp": "latest",

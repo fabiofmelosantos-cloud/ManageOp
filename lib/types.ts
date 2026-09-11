@@ -55,6 +55,12 @@ export interface FinishedProduct {
   productionDate: string
   channel: "HQ" | "B2B"
   createdAt: string
+  warehouseValidatedAt?: string
+  warehouseValidatedBy?: string
+  shippedAt?: string
+  shippedQuantity?: number
+  shippedLot?: string
+  shippedPalletNumber?: string
 }
 
 export interface MaterialRequest {

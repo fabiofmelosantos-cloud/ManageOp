@@ -10,6 +10,7 @@ export type SupportTask = {
   operatorId: string
   operatorName: string
   createdAt: string
+  completed: boolean
 }
 
 const STORAGE_KEY = "support_tasks"
@@ -17,6 +18,21 @@ const STORAGE_KEY = "support_tasks"
 export async function GET() {
   const tasks = (await getData<SupportTask[]>(STORAGE_KEY)) ?? []
   return NextResponse.json(tasks)
+}
+
+export async function PATCH(request: Request) {
+  const body = await request.json()
+  const taskId = String(body.id ?? "").trim()
+  if (!taskId) return NextResponse.json({ error: "Tarefa inválida." }, { status: 400 })
+
+  const tasks = (await getData<SupportTask[]>(STORAGE_KEY)) ?? []
+  const task = tasks.find((item) => item.id === taskId)
+  if (!task) return NextResponse.json({ error: "Tarefa não encontrada." }, { status: 404 })
+
+  const updatedTask = { ...task, completed: Boolean(body.completed) }
+  const saved = await setData(STORAGE_KEY, tasks.map((item) => item.id === taskId ? updatedTask : item))
+  if (!saved) return NextResponse.json({ error: "Não foi possível atualizar a tarefa." }, { status: 500 })
+  return NextResponse.json(updatedTask)
 }
 
 export async function POST(request: Request) {
@@ -42,6 +58,7 @@ export async function POST(request: Request) {
     operatorId,
     operatorName,
     createdAt: new Date().toISOString(),
+    completed: false,
   }
 
   const saved = await setData(STORAGE_KEY, [task, ...tasks])

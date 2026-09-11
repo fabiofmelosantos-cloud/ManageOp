@@ -44,6 +44,19 @@ export interface StockItem {
   createdAt: string
 }
 
+export interface FinishedProduct {
+  id: string
+  palletNumber: string
+  product: string
+  quantity: number
+  unit: string
+  lot: string
+  expiryDate: string
+  productionDate: string
+  channel: "HQ" | "B2B"
+  createdAt: string
+}
+
 export interface MaterialRequest {
   id: string
   stockItemId: string

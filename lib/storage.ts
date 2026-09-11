@@ -23,6 +23,7 @@ const cache: {
   generatedTasks: import("./types").GeneratedTask[] | null
   stockItems: import("./types").StockItem[] | null
   materialRequests: import("./types").MaterialRequest[] | null
+  finishedProducts: import("./types").FinishedProduct[] | null
 } = {
   workers: null,
   productionLines: null,
@@ -35,6 +36,7 @@ const cache: {
   generatedTasks: null,
   stockItems: null,
   materialRequests: null,
+  finishedProducts: null,
 }
 
 async function readFromNeon<T>(key: string, defaultValue: T): Promise<T> {
@@ -271,6 +273,21 @@ export async function saveSpreadsheetSettings(url: string): Promise<SpreadsheetS
   const settings = { url: url.trim(), updatedAt: new Date().toISOString() }
   await writeToNeon("spreadsheet_settings", settings)
   return settings
+}
+
+export function getFinishedProducts(): import("./types").FinishedProduct[] {
+  return cache.finishedProducts || []
+}
+
+export async function loadFinishedProducts(): Promise<import("./types").FinishedProduct[]> {
+  const products = await readFromNeon<import("./types").FinishedProduct[]>("finished_products", [])
+  cache.finishedProducts = products
+  return products
+}
+
+export async function saveFinishedProducts(products: import("./types").FinishedProduct[]): Promise<void> {
+  cache.finishedProducts = products
+  await writeToNeon("finished_products", products)
 }
 
 export function getStockItems(): import("./types").StockItem[] {

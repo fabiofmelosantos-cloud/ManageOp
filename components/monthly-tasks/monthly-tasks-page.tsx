@@ -79,16 +79,13 @@ export function MonthlyTasksPage() {
     const normalizedName = value.trim()
     assignments[taskId][date] = normalizedName
 
-    // O primeiro dia do mês funciona como modelo: o nome escolhido preenche os dias úteis conforme a periodicidade.
-    const selectedDate = new Date(`${date}T12:00:00`)
+    // O primeiro nome escrito numa tarefa passa a ser o modelo a partir desse dia.
     const task = tasks.find((item) => item.id === taskId)
-    const firstWorking = firstWorkingDay(days)
-    const isMonthlyTemplateCell = firstWorking && localDateKey(firstWorking) === date
-    if (task && isMonthlyTemplateCell && normalizedName) {
+    if (task && normalizedName) {
       const worker = workers.find((item) => item.name.toLocaleLowerCase() === normalizedName.toLocaleLowerCase())
       for (const day of days) {
-        if (day.getDay() === 0 || day.getDay() === 6) continue
-        const dayDate = day.toISOString().slice(0, 10)
+        const dayDate = localDateKey(day)
+        if (dayDate < date || !isWorkingDay(day)) continue
         const active = task.frequency === "daily" || (task.frequency === "twice-weekly" && (day.getDay() === 2 || day.getDay() === 5))
         if (active && (!worker || !isOnVacation(vacations, worker, dayDate))) assignments[taskId][dayDate] = normalizedName
       }

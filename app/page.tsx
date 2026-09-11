@@ -10,6 +10,7 @@ import Link from "next/link"
 import { Factory, Users, TrendingUp, AlertCircle, Boxes, CalendarDays, Clock3, LifeBuoy, ListTodo, Palmtree } from "lucide-react"
 import { useDateContext } from "@/components/layout/app-header"
 import { getSupabase } from "@/lib/supabase-client"
+import { SupportCard } from "@/components/dashboard/support-card"
 
 type WorkerDetail = {
   id: string
@@ -34,7 +35,7 @@ type LineDetail = {
 
 export default function DashboardPage() {
   const { selectedDate } = useDateContext()
-  const [selectedShift, setSelectedShift] = useState<"morning" | "afternoon" | "night">("morning")
+  const [selectedShift, setSelectedShift] = useState<"morning" | "afternoon">("morning")
 
   const [selectedWorkerStatus, setSelectedWorkerStatus] = useState<string | null>(null)
   const [selectedLine, setSelectedLine] = useState<string | null>(null)
@@ -47,7 +48,7 @@ export default function DashboardPage() {
   const [workerStats, setWorkerStats] = useState<any>({
     morning: { working: 0, absent: 0, dc: 0, vacation: 0 },
     afternoon: { working: 0, absent: 0, dc: 0, vacation: 0 },
-    night: { working: 0, absent: 0, dc: 0, vacation: 0 },
+
   })
 
   useEffect(() => {
@@ -140,11 +141,11 @@ export default function DashboardPage() {
     const stats = {
       morning: { working: 0, absent: 0, dc: 0, vacation: 0 },
       afternoon: { working: 0, absent: 0, dc: 0, vacation: 0 },
-      night: { working: 0, absent: 0, dc: 0, vacation: 0 },
+  
     }
 
     scheduleDays?.forEach((day: any) => {
-      const shift = day.shift as "morning" | "afternoon" | "night"
+      const shift = day.shift as "morning" | "afternoon"
       if (stats[shift]) {
         stats[shift].working += day.shift_assignments?.length || 0
       }
@@ -169,7 +170,6 @@ export default function DashboardPage() {
     const shiftMap = {
       morning: "morning",
       afternoon: "afternoon",
-      night: "night",
     }
 
     if (status === "working") {
@@ -346,15 +346,12 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-2 sm:space-y-3">
               <Tabs value={selectedShift} onValueChange={(v) => setSelectedShift(v as any)}>
-                <TabsList className="grid w-full grid-cols-3 h-10 sm:h-11 p-1">
+                <TabsList className="grid w-full grid-cols-2 h-10 sm:h-11 p-1">
                   <TabsTrigger value="morning" className="text-xs sm:text-sm px-2 sm:px-3">
-                    Manhã
+                    Turno 1
                   </TabsTrigger>
                   <TabsTrigger value="afternoon" className="text-xs sm:text-sm px-2 sm:px-3">
-                    Tarde
-                  </TabsTrigger>
-                  <TabsTrigger value="night" className="text-xs sm:text-sm px-2 sm:px-3">
-                    Noite
+                    Turno 2
                   </TabsTrigger>
                 </TabsList>
 
@@ -441,7 +438,7 @@ export default function DashboardPage() {
           </Link>
           <Link href="/schedules" className="group block"><Card className="aspect-square border-primary/20 transition-all hover:border-primary/50 hover:shadow-lg active:scale-[0.98]"><CardContent className="flex h-full flex-col items-center justify-center gap-2 p-2 text-center"><Clock3 className="size-8 text-primary" aria-hidden="true" /><CardTitle className="text-xs sm:text-sm">Horário</CardTitle><p className="text-[11px] text-muted-foreground">Escalas</p></CardContent></Card></Link>
           <Link href="/hr" className="group block"><Card className="aspect-square border-primary/20 transition-all hover:border-primary/50 hover:shadow-lg active:scale-[0.98]"><CardContent className="flex h-full flex-col items-center justify-center gap-2 p-2 text-center"><Palmtree className="size-8 text-primary" aria-hidden="true" /><CardTitle className="text-xs sm:text-sm">Férias</CardTitle><p className="text-[11px] text-muted-foreground">Gestão de férias</p></CardContent></Card></Link>
-          <Card aria-disabled="true" className="aspect-square cursor-not-allowed opacity-65"><CardContent className="flex h-full flex-col items-center justify-center gap-2 p-2 text-center"><LifeBuoy className="size-8 text-muted-foreground" aria-hidden="true" /><CardTitle className="text-xs sm:text-sm">Suporte</CardTitle><p className="text-[11px] text-muted-foreground">Em breve</p></CardContent></Card>
+          <div className="col-span-2 lg:col-span-6"><SupportCard /></div>
           <Card aria-disabled="true" className="aspect-square cursor-not-allowed opacity-65"><CardContent className="flex h-full flex-col items-center justify-center gap-2 p-2 text-center"><ListTodo className="size-8 text-muted-foreground" aria-hidden="true" /><CardTitle className="text-xs sm:text-sm">Tarefas</CardTitle><p className="text-[11px] text-muted-foreground">Em breve</p></CardContent></Card>
         </div>
 
@@ -455,7 +452,7 @@ export default function DashboardPage() {
                 {selectedWorkerStatus === "vacation" && "Férias"}
               </DialogTitle>
               <DialogDescription className="text-sm">
-                Turno: {selectedShift === "morning" ? "Manhã" : selectedShift === "afternoon" ? "Tarde" : "Noite"}
+                Turno: {selectedShift === "morning" ? "Turno 1" : "Turno 2"}
               </DialogDescription>
             </DialogHeader>
 

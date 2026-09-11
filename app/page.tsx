@@ -43,6 +43,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false)
 
   const [productionLines, setProductionLines] = useState<any[]>([])
+  const [weeklyLineCounts, setWeeklyLineCounts] = useState({ current: 0, next: 0 })
   const [workerStats, setWorkerStats] = useState<any>({
     morning: { working: 0, absent: 0, dc: 0, vacation: 0 },
     afternoon: { working: 0, absent: 0, dc: 0, vacation: 0 },
@@ -99,6 +100,16 @@ export default function DashboardPage() {
 
       setProductionLines(Array.from(linesMap.values()))
     }
+
+    const { loadWeeklyPlans, getWeeklyPlans } = await import("@/lib/storage")
+    await loadWeeklyPlans()
+    const plan = getWeeklyPlans().at(-1)
+    const weekStart = new Date(selectedDate)
+    weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7))
+    const nextStart = new Date(weekStart)
+    nextStart.setDate(nextStart.getDate() + 7)
+    const countLines = (start: Date) => new Set((plan?.days ?? []).filter((day: any) => { const date = new Date(day.date); const end = new Date(start); end.setDate(end.getDate() + 7); return date >= start && date < end }).flatMap((day: any) => day.shifts?.flatMap((shift: any) => shift.entries?.map((entry: any) => entry.lineId) ?? []) ?? [])).size
+    setWeeklyLineCounts({ current: countLines(weekStart), next: countLines(nextStart) })
 
     // Carregar estatísticas de trabalhadores
     await loadWorkerStats()
@@ -287,6 +298,10 @@ export default function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-2 sm:space-y-3">
+              <div className="grid grid-cols-2 gap-2 rounded-lg border bg-muted/30 p-2 text-center">
+                <div><p className="text-[11px] text-muted-foreground">Semana corrente</p><p className="text-xl font-bold">{weeklyLineCounts.current || productionLines.filter((line) => line.isRunning).length}</p><p className="text-[11px] text-muted-foreground">linhas em funcionamento</p></div>
+                <div><p className="text-[11px] text-muted-foreground">Próxima semana</p><p className="text-xl font-bold">{weeklyLineCounts.next}</p><p className="text-[11px] text-muted-foreground">linhas planeadas</p></div>
+              </div>
               {productionLines.slice(0, 3).map((line) => (
                 <div
                   key={line.id}

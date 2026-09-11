@@ -11,6 +11,7 @@ import { WeeklyPlanManagement } from "@/components/production-plan/weekly-plan-m
 import { HRManagementPanel } from "@/components/hr/hr-management-panel"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import type {
   Worker,
   ProductionLine,
@@ -34,6 +35,8 @@ export default function SettingsPage() {
   const [generationConfig, setGenerationConfig] = useState<ScheduleGenerationConfig | null>(null)
   const [editingSchedule, setEditingSchedule] = useState<any>(null)
   const [schedules, setSchedules] = useState<any[]>([])
+  const [spreadsheetUrl, setSpreadsheetUrl] = useState("")
+  const [spreadsheetSaved, setSpreadsheetSaved] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -51,6 +54,7 @@ export default function SettingsPage() {
           loadSpecialties,
           loadWeeklyPlans,
           loadSchedules,
+          loadSpreadsheetSettings,
           getWorkers,
           getProductionLines,
           getProducts,
@@ -69,6 +73,9 @@ export default function SettingsPage() {
           loadWeeklyPlans(),
           loadSchedules(),
         ])
+
+        const spreadsheet = await loadSpreadsheetSettings()
+        setSpreadsheetUrl(spreadsheet.url)
 
         const loadedWorkers = getWorkers()
         const loadedLines = getProductionLines()
@@ -177,6 +184,19 @@ export default function SettingsPage() {
             Gestão de trabalhadores, linhas, planos e geração de escalas
           </p>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Fonte de dados da empresa</CardTitle>
+            <CardDescription>Link Excel/CSV em modo apenas leitura para Planeamento, Horário, Férias, Suporte e Tarefas.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 sm:flex-row">
+            <Input value={spreadsheetUrl} onChange={(event) => setSpreadsheetUrl(event.target.value)} placeholder="https://empresa.pt/ficheiros/operacoes.xlsx" type="url" aria-label="Link da planilha" />
+            <Button onClick={async () => { const { saveSpreadsheetSettings } = await import("@/lib/storage"); await saveSpreadsheetSettings(spreadsheetUrl); setSpreadsheetSaved(true); setTimeout(() => setSpreadsheetSaved(false), 2500) }}>
+              {spreadsheetSaved ? "Guardado" : "Guardar link"}
+            </Button>
+          </CardContent>
+        </Card>
 
         <Tabs defaultValue="workers" className="w-full">
           <div className="overflow-x-auto -mx-2 px-2 pb-2">

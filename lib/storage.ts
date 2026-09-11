@@ -248,6 +248,31 @@ export async function saveProducts(products: Product[]): Promise<void> {
   await writeToNeon("products", products)
 }
 
+export async function clearWorkers(): Promise<void> {
+  cache.workers = []
+  await writeToNeon("workers", [])
+}
+
+export async function clearProducts(): Promise<void> {
+  cache.products = []
+  await writeToNeon("products", [])
+}
+
+export type SpreadsheetSettings = {
+  url: string
+  updatedAt: string
+}
+
+export async function loadSpreadsheetSettings(): Promise<SpreadsheetSettings> {
+  return readFromNeon<SpreadsheetSettings>("spreadsheet_settings", { url: "", updatedAt: "" })
+}
+
+export async function saveSpreadsheetSettings(url: string): Promise<SpreadsheetSettings> {
+  const settings = { url: url.trim(), updatedAt: new Date().toISOString() }
+  await writeToNeon("spreadsheet_settings", settings)
+  return settings
+}
+
 export function getStockItems(): import("./types").StockItem[] {
   return cache.stockItems || []
 }

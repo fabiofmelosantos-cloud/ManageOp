@@ -1,72 +1,110 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { Plus, Trash2, WandSparkles, UsersRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CalendarDays, Clock3, WandSparkles } from "lucide-react"
 import type { Worker } from "@/lib/types"
 
-const hours = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"]
-const tasks = ["Suporte", "Hone top", "Hone top", "Hone top", "Hone top", "Hone top", "Suporte", "Hone top", "Limpeza", "Saída"]
+const defaultHours = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"]
+const defaultPositions = ["Suporte", "Hone top / Palete", "Hone top / Máquina", "Hone top", "Hone top", "Hone top", "Suporte", "Hone top", "Limpeza", "Saída"]
 
-function todayLabel() {
-  return new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "2-digit", year: "numeric", weekday: "long" }).format(new Date())
+function dateLabel(date: string) {
+  return new Intl.DateTimeFormat("pt-PT", { dateStyle: "full" }).format(new Date(`${date}T12:00:00`))
 }
 
 export function ShiftOneBoard() {
   const [workers, setWorkers] = useState<Worker[]>([])
-  const [shift, setShift] = useState("turno1")
-  const [generated, setGenerated] = useState<Record<string, string[]>>({})
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [shift, setShift] = useState("turno1")
+  const [hours, setHours] = useState(defaultHours)
+  const [positions, setPositions] = useState(defaultPositions)
+  const [columns, setColumns] = useState<string[]>([])
+  const [assignments, setAssignments] = useState<Record<string, string[]>>({})
 
   useEffect(() => {
     let active = true
     void import("@/lib/storage").then(async ({ loadWorkers, getWorkers }) => {
       await loadWorkers()
-      if (active) setWorkers(getWorkers())
+      if (active) {
+        const names = getWorkers().map((worker) => worker.name).filter(Boolean)
+        setWorkers(getWorkers())
+        setColumns(names)
+      }
     })
     return () => { active = false }
   }, [])
 
-  const names = useMemo(() => workers.map((worker) => worker.name).filter(Boolean), [workers])
+  const workerNames = useMemo(() => workers.map((worker) => worker.name).filter(Boolean), [workers])
+  const lunchHours = ["12:00", "13:00", "14:00"]
 
-  function generate() {
-    const assignments: Record<string, string[]> = {}
-    names.forEach((name, index) => {
-      assignments[name] = hours.map((hour, hourIndex) => {
-        if (hour === "12:00" || hour === "13:00" || hour === "14:00") {
-          const lunchHour = 12 + (index % 3)
-          return Number(hour.slice(0, 2)) === lunchHour ? `Almoço (${lunchHour}:00)` : "Hone top"
-        }
-        return tasks[hourIndex]
-      })
+  function lunchLabel(columnIndex: number, hour: string) {
+    const lunch = lunchHours[columnIndex % lunchHours.length]
+    return hour === lunch ? `Almoço (${lunch})` : "Hone top"
+  }
+
+  function buildSchedule(sourceColumns: string[]) {
+    const next: Record<string, string[]> = {}
+    sourceColumns.forEach((name, columnIndex) => {
+      next[name] = hours.map((hour, rowIndex) => lunchHours.includes(hour) ? lunchLabel(columnIndex, hour) : positions[rowIndex] ?? "")
     })
-    setGenerated(assignments)
+    setAssignments(next)
+  }
+
+  function generateFromWorkers() {
+    const names = workerNames.length ? workerNames : columns.filter(Boolean)
+    setColumns(names)
+    buildSchedule(names)
+  }
+
+  function generateFromManual() {
+    const firstFilled = columns.findIndex(Boolean)
+    if (firstFilled < 0) return
+    const names = columns.map((name, index) => name || `Colaborador ${index + 1}`)
+    setColumns(names)
+    buildSchedule(names)
+  }
+
+  function updateCell(column: string, rowIndex: number, value: string) {
+    setAssignments((current) => ({ ...current, [column]: (current[column] ?? Array(hours.length).fill("")).map((entry, index) => index === rowIndex ? value : entry) }))
+  }
+
+  function addColumn() {
+    setColumns((current) => [...current, `Colaborador ${current.length + 1}`])
+  }
+
+  function addRow() {
+    setHours((current) => [...current, ""])
+    setPositions((current) => [...current, ""])
+  }
+
+  function removeColumn(index: number) {
+    setColumns((current) => current.filter((_, itemIndex) => itemIndex !== index))
+  }
+
+  function removeRow(index: number) {
+    setHours((current) => current.filter((_, itemIndex) => itemIndex !== index))
+    setPositions((current) => current.filter((_, itemIndex) => itemIndex !== index))
   }
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="flex flex-col gap-4 border-b bg-muted/20 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <CardTitle className="flex items-center gap-2"><Clock3 className="size-5 text-primary" />Quadro de horários</CardTitle>
-          <CardDescription>Turno 1 · 09:00–18:00 · almoço distribuído de forma rotativa.</CardDescription>
-        </div>
+      <CardHeader className="flex flex-col gap-4 border-b bg-muted/20 lg:flex-row lg:items-end lg:justify-between">
+        <div><CardTitle>Quadro de horários</CardTitle><CardDescription>Turno 1 · 09:00–18:00 · rotação justa de duas pessoas por hora de almoço.</CardDescription></div>
         <div className="flex flex-wrap items-end gap-2">
-          <div className="grid gap-1"><label htmlFor="schedule-date" className="text-xs font-medium">Dia</label><input id="schedule-date" type="date" value={date} onChange={(event) => setDate(event.target.value)} className="h-9 rounded-md border bg-background px-3 text-sm" /></div>
-          <div className="grid gap-1"><label htmlFor="shift-select" className="text-xs font-medium">Turno</label><Select value={shift} onValueChange={setShift}><SelectTrigger id="shift-select" className="h-9 w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="turno1">Turno 1 · 09–18</SelectItem></SelectContent></Select></div>
-          <Button onClick={generate} disabled={!names.length}><WandSparkles data-icon="inline-start" />Gerar horário</Button>
+          <div className="grid gap-1"><Label htmlFor="schedule-date">Dia</Label><Input id="schedule-date" type="date" value={date} onChange={(event) => setDate(event.target.value)} className="h-9" /></div>
+          <div className="grid gap-1"><Label htmlFor="shift-select">Turno</Label><Select value={shift} onValueChange={setShift}><SelectTrigger id="shift-select" className="h-9 w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="turno1">Turno 1 · 09–18</SelectItem></SelectContent></Select></div>
+          <Button variant="outline" onClick={generateFromWorkers} disabled={!workerNames.length}><UsersRound data-icon="inline-start" />Gerar trabalhadores</Button>
+          <Button onClick={generateFromManual}><WandSparkles data-icon="inline-start" />Gerar manual</Button>
         </div>
       </CardHeader>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="min-w-[980px] w-full border-collapse text-sm">
-            <caption className="sr-only">Horário de {todayLabel()}</caption>
-            <thead><tr className="bg-muted/60"><th colSpan={names.length + 2} className="border px-3 py-2 text-center text-base font-bold">{new Intl.DateTimeFormat("pt-PT", { dateStyle: "full" }).format(new Date(`${date}T12:00:00`))}</th></tr><tr className="bg-muted/40"><th className="border px-3 py-2 text-left">Horas</th>{names.map((name) => <th key={name} className="border px-3 py-2 text-center font-semibold">{name}</th>)}<th className="border px-3 py-2">Horas*</th></tr></thead>
-            <tbody>{hours.map((hour, hourIndex) => <tr key={hour} className={hourIndex % 2 ? "bg-background" : "bg-muted/20"}><th className="border px-3 py-2 text-left font-medium">{hour}</th>{names.map((name) => <td key={`${name}-${hour}`} className={`border px-3 py-2 text-center ${generated[name]?.[hourIndex]?.startsWith("Almoço") ? "font-bold text-primary" : ""}`}>{generated[name]?.[hourIndex] ?? "—"}</td>)}<td className="border px-3 py-2 text-center font-medium">{hour}</td></tr>)}</tbody>
-          </table>
-        </div>
-        {!names.length && <p className="p-6 text-center text-sm text-muted-foreground">Adicione trabalhadores para gerar o horário.</p>}
+      <CardContent className="space-y-3 p-3">
+        <div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={addColumn}><Plus data-icon="inline-start" />Colaborador</Button><Button variant="outline" size="sm" onClick={addRow}><Plus data-icon="inline-start" />Linha</Button><span className="self-center text-xs text-muted-foreground">Escreva os nomes e posições diretamente no quadro.</span></div>
+        <div className="overflow-x-auto rounded-md border"><table className="min-w-[1050px] w-full border-collapse text-sm"><caption className="sr-only">Horário de {dateLabel(date)}</caption><thead><tr className="bg-muted/60"><th colSpan={columns.length + 2} className="border px-3 py-2 text-center text-base font-bold">{dateLabel(date)}</th></tr><tr className="bg-muted/40"><th className="border px-2 py-2">Horas</th>{columns.map((column, index) => <th key={`${column}-${index}`} className="min-w-36 border p-2"><Input value={column} onChange={(event) => setColumns((current) => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} placeholder="Nome / posto" className="h-8 text-center font-semibold" /><Button variant="ghost" size="icon" aria-label="Remover colaborador" onClick={() => removeColumn(index)}><Trash2 className="size-4" /></Button></th>)}<th className="border px-2 py-2">Horas*</th></tr></thead><tbody>{hours.map((hour, rowIndex) => <tr key={`${hour}-${rowIndex}`} className={rowIndex % 2 ? "bg-background" : "bg-muted/20"}><th className="border p-2"><Input value={hour} onChange={(event) => setHours((current) => current.map((item, index) => index === rowIndex ? event.target.value : item))} className="h-8 w-20 font-medium" /></th>{columns.map((column, columnIndex) => <td key={`${column}-${rowIndex}`} className="border p-1"><Input value={assignments[column]?.[rowIndex] ?? positions[rowIndex] ?? ""} onChange={(event) => updateCell(column, rowIndex, event.target.value)} className={lunchHours.includes(hour) && assignments[column]?.[rowIndex]?.startsWith("Almoço") ? "h-9 text-center font-bold text-primary" : "h-9 text-center"} /></td>)}<td className="border p-2 text-center"><div className="flex items-center justify-center gap-1"><span>{hour}</span><Button variant="ghost" size="icon" aria-label="Remover linha" onClick={() => removeRow(rowIndex)}><Trash2 className="size-4" /></Button></div></td></tr>)}</tbody></table></div>
+        {!columns.length && <p className="p-6 text-center text-sm text-muted-foreground">Adicione trabalhadores ou um colaborador manualmente para começar.</p>}
       </CardContent>
     </Card>
   )

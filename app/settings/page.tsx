@@ -2,7 +2,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Users, Package, Calendar, ClipboardList, UserCog, Trash2 } from "lucide-react"
+import { Users, Package, Calendar, ClipboardList, UserCog, Trash2, Plus } from "lucide-react"
 import WorkersPage from "@/app/workers/page"
 import ProductionLinesPage from "@/app/production-lines/page"
 import { ScheduleGeneratorForm } from "@/components/schedule/schedule-generator-form"
@@ -37,6 +37,10 @@ export default function SettingsPage() {
   const [schedules, setSchedules] = useState<any[]>([])
   const [spreadsheetUrl, setSpreadsheetUrl] = useState("")
   const [spreadsheetSaved, setSpreadsheetSaved] = useState(false)
+  const [productName, setProductName] = useState("")
+  const [productDescription, setProductDescription] = useState("")
+  const [isSavingProduct, setIsSavingProduct] = useState(false)
+  const [productError, setProductError] = useState("")
 
   useEffect(() => {
     setMounted(true)
@@ -97,6 +101,40 @@ export default function SettingsPage() {
 
     loadData()
   }, [mounted])
+
+  const handleAddProduct = async () => {
+    const name = productName.trim()
+    if (!name) {
+      setProductError("Indique o nome do produto.")
+      return
+    }
+    if (products.some((product) => product.name.toLocaleLowerCase() === name.toLocaleLowerCase())) {
+      setProductError("Já existe um produto com este nome.")
+      return
+    }
+    setIsSavingProduct(true)
+    setProductError("")
+    try {
+      const { addProduct, loadProducts, getProducts } = await import("@/lib/storage")
+      await addProduct({ name, description: productDescription.trim() || undefined })
+      await loadProducts()
+      setProducts(getProducts())
+      setProductName("")
+      setProductDescription("")
+    } catch {
+      setProductError("Não foi possível guardar o produto. Tente novamente.")
+    } finally {
+      setIsSavingProduct(false)
+    }
+  }
+
+  const handleDeleteProduct = async (product: Product) => {
+    if (!window.confirm(`Eliminar o produto ${product.name}?`)) return
+    const { deleteProduct, loadProducts, getProducts } = await import("@/lib/storage")
+    await deleteProduct(product.id)
+    await loadProducts()
+    setProducts(getProducts())
+  }
 
   const handleEditSchedule = (schedule: any) => {
     console.log("[v0] handleEditSchedule called with schedule:", schedule)
@@ -198,9 +236,9 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="workers" className="w-full">
+        <Tabs defaultValue="products" className="w-full">
           <div className="overflow-x-auto -mx-2 px-2 pb-2">
-            <TabsList className="inline-flex w-full min-w-max sm:grid sm:grid-cols-2 lg:grid-cols-5 h-auto gap-1 sm:gap-2">
+            <TabsList className="inline-flex w-full min-w-max sm:grid sm:grid-cols-3 lg:grid-cols-6 h-auto gap-1 sm:gap-2">
               <TabsTrigger
                 value="workers"
                 className="text-xs sm:text-sm lg:text-base py-2.5 sm:py-3 px-3 sm:px-4 whitespace-nowrap"
@@ -214,6 +252,13 @@ export default function SettingsPage() {
               >
                 <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                 Linhas
+              </TabsTrigger>
+              <TabsTrigger
+                value="products"
+                className="text-xs sm:text-sm lg:text-base py-2.5 sm:py-3 px-3 sm:px-4 whitespace-nowrap"
+              >
+                <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" aria-hidden="true" />
+                Produtos
               </TabsTrigger>
               <TabsTrigger
                 value="generate"
@@ -245,6 +290,56 @@ export default function SettingsPage() {
 
           <TabsContent value="lines" className="mt-6">
             <ProductionLinesPage />
+          </TabsContent>
+
+          <TabsContent value="products" className="mt-6">
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Novo produto</CardTitle>
+                  <CardDescription>Adicione produtos para utilizar no planeamento e na produção.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <div className="grid gap-2">
+                    <label htmlFor="product-name" className="text-sm font-medium">Nome do produto</label>
+                    <Input id="product-name" value={productName} onChange={(event) => setProductName(event.target.value)} placeholder="Ex.: Produto acabado A" />
+                  </div>
+                  <div className="grid gap-2">
+                    <label htmlFor="product-description" className="text-sm font-medium">Descrição (opcional)</label>
+                    <Input id="product-description" value={productDescription} onChange={(event) => setProductDescription(event.target.value)} placeholder="Descrição ou referência interna" />
+                  </div>
+                  {productError && <p role="alert" className="text-sm text-destructive">{productError}</p>}
+                  <Button onClick={() => void handleAddProduct()} disabled={isSavingProduct}>
+                    <Plus data-icon="inline-start" />{isSavingProduct ? "A guardar..." : "Criar produto"}
+                  </Button>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Produtos registados</CardTitle>
+                  <CardDescription>{products.length} produto(s) disponível(eis) no sistema.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {products.length === 0 ? (
+                    <p className="py-8 text-center text-sm text-muted-foreground">Ainda não existem produtos registados.</p>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {products.map((product) => (
+                        <div key={product.id} className="flex items-center justify-between gap-4 rounded-lg border p-3">
+                          <div className="min-w-0">
+                            <p className="font-medium truncate">{product.name}</p>
+                            {product.description && <p className="text-sm text-muted-foreground truncate">{product.description}</p>}
+                          </div>
+                          <Button variant="ghost" size="icon" aria-label={`Eliminar ${product.name}`} onClick={() => void handleDeleteProduct(product)}>
+                            <Trash2 data-icon="inline-start" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="generate" className="mt-6">

@@ -226,12 +226,17 @@ export default function SettingsPage() {
             <CardTitle>Fonte de dados da empresa</CardTitle>
             <CardDescription>Link Excel/CSV em modo apenas leitura para Planeamento, Horário, Férias, Suporte e Tarefas.</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-3 sm:flex-row">
-            <Input value={spreadsheetUrl} onChange={(event) => setSpreadsheetUrl(event.target.value)} placeholder="https://empresa.pt/ficheiros/operacoes.xlsx" type="url" aria-label="Link da planilha" />
-            <Button onClick={async () => { const { saveSpreadsheetSettings } = await import("@/lib/storage"); await saveSpreadsheetSettings(spreadsheetUrl); setSpreadsheetSaved(true); setTimeout(() => setSpreadsheetSaved(false), 2500) }}>
-              {spreadsheetSaved ? "Guardado" : "Guardar link"}
-            </Button>
-          </CardContent>
+  <CardContent className="flex flex-col gap-3 sm:flex-row">
+ <Input value={spreadsheetUrl} onChange={(event) => setSpreadsheetUrl(event.target.value)} placeholder="https://empresa.pt/ficheiros/operacoes.xlsx" type="url" aria-label="Link da planilha" />
+ <div className="flex shrink-0 gap-2">
+  <Button onClick={async () => { const { saveSpreadsheetSettings } = await import("@/lib/storage"); await saveSpreadsheetSettings(spreadsheetUrl); setSpreadsheetSaved(true); setTimeout(() => setSpreadsheetSaved(false), 2500) }}>
+  {spreadsheetSaved ? "Guardado" : "Guardar link"}
+  </Button>
+  <Button variant="outline" disabled={!spreadsheetUrl.trim()} onClick={async () => { if (!window.confirm("Eliminar o link da fonte de dados?")) return; const { saveSpreadsheetSettings } = await import("@/lib/storage"); await saveSpreadsheetSettings(""); setSpreadsheetUrl(""); setSpreadsheetSaved(false) }}>
+  Eliminar link
+  </Button>
+ </div>
+  </CardContent>
         </Card>
 
         <Tabs defaultValue="products" className="w-full">

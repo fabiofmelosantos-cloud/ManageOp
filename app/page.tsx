@@ -305,10 +305,14 @@ export default function DashboardPage() {
               if (firstRunningLine) {
                 setSelectedLine(firstRunningLine.id)
                 loadLineDetails(firstRunningLine.id)
-              } else if (firstImportedRow) {
-                const { sheet, row, index } = firstImportedRow
-                setLineDetail({ id: `${sheet.sheet}-${index}`, name: String(row.Linha ?? row.Line ?? sheet.sheet), description: String(row.Produto ?? row.Product ?? ""), product: String(row.Produto ?? row.Product ?? ""), productDescription: String(row.Descrição ?? row.Description ?? ""), workers: [], produced: Number(row.Quantidade ?? row.Quantity ?? row.Produzido ?? 0), target: Number(row.Meta ?? row.Target ?? 0) })
-              }
+  } else if (firstImportedRow) {
+  const { sheet, row, index } = firstImportedRow
+  const importedName = String(row.Linha ?? row.Line ?? sheet.sheet)
+  const configuredLine = productionLines.find((line) => line.name?.toLocaleLowerCase() === importedName.toLocaleLowerCase())
+  const importedId = `imported-${sheet.sheet}-${index}`
+  setSelectedLine(importedId)
+  setLineDetail({ id: importedId, name: configuredLine?.name ?? importedName, description: configuredLine?.description ?? `Produção importada da aba ${sheet.sheet}`, product: String(row.Produto ?? row.Product ?? ""), productDescription: String(row.Descrição ?? row.Description ?? ""), workers: [], produced: Number(row.Quantidade ?? row.Quantity ?? row.Produzido ?? 0), target: Number(row.Meta ?? row.Target ?? 0) })
+  }
             }}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {
@@ -333,12 +337,12 @@ export default function DashboardPage() {
             <CardContent className="space-y-2 sm:space-y-3">
               {productionSummaryError && <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">{productionSummaryError}</p>}
               {productionSummary.flatMap((sheet) => sheet.rows.map((row, index) => <button key={`${sheet.sheet}-${index}`} type="button" className="w-full rounded-lg border bg-card p-3 text-left transition hover:border-primary hover:shadow-sm" onClick={(event) => { event.stopPropagation(); setLineDetail({ id: `${sheet.sheet}-${index}`, name: String(row.Linha ?? row.Line ?? sheet.sheet), description: String(row.Produto ?? row.Product ?? ""), product: String(row.Produto ?? row.Product ?? ""), productDescription: String(row.Descrição ?? row.Description ?? ""), workers: [], produced: Number(row.Quantidade ?? row.Quantity ?? row.Produzido ?? 0), target: Number(row.Meta ?? row.Target ?? 0) }) }}><div className="mb-2 flex items-center justify-between"><p className="text-sm font-medium">{String(row.Linha ?? row.Line ?? sheet.sheet)}</p><Badge variant="secondary" className="text-[10px]">{sheet.sheet}</Badge></div><p className="truncate text-xs text-muted-foreground">{Object.values(row).filter(Boolean).slice(0, 4).join(" · ")}</p></button>))}
-              {productionLines.filter((line) => line.isRunning).slice(0, 4).map((line) => (
-                <div key={line.id} className="flex items-center gap-2 rounded-lg border bg-card p-3">
-                  <div className="size-2 shrink-0 animate-pulse rounded-full bg-green-500" />
-                  <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{line.name}</p><p className="truncate text-xs text-muted-foreground">{line.product}</p></div><span className="shrink-0 text-xs font-medium text-green-600">A operar</span>
-                </div>
-              ))}
+  {productionLines.filter((line) => line.isRunning).slice(0, 4).map((line) => (
+  <button key={line.id} type="button" className="flex w-full items-center gap-2 rounded-lg border bg-card p-3 text-left hover:border-primary" onClick={(event) => { event.stopPropagation(); setSelectedLine(line.id); void loadLineDetails(line.id) }}>
+  <div className="size-2 shrink-0 animate-pulse rounded-full bg-green-500" />
+  <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{line.name}</p><p className="truncate text-xs text-muted-foreground">{line.product}</p></div><span className="shrink-0 text-xs font-medium text-green-600">A operar</span>
+  </button>
+  ))}
               {productionSummary.length === 0 && productionLines.filter((line) => line.isRunning).length === 0 && (
                 <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">Não foram encontrados registos nas abas honetop e barritas para apresentar.</p>
               )}

@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import Link from "next/link"
-import { Factory, Users, TrendingUp, AlertCircle, Boxes, CalendarDays, Clock3, LifeBuoy, ListTodo, Palmtree } from "lucide-react"
+import { Factory, Users, TrendingUp, AlertCircle, Boxes, CalendarDays, Clock3, LifeBuoy, ListTodo, Palmtree, ChevronLeft, ChevronRight } from "lucide-react"
 import { useDateContext } from "@/components/layout/app-header"
 import { getSupabase } from "@/lib/supabase-client"
 import { SupportCard } from "@/components/dashboard/support-card"
@@ -35,7 +35,8 @@ type LineDetail = {
 }
 
 export default function DashboardPage() {
-  const { selectedDate } = useDateContext()
+  const { selectedDate, setSelectedDate } = useDateContext()
+  const visibleDate = selectedDate ?? new Date()
   const [selectedShift, setSelectedShift] = useState<"morning" | "afternoon">("morning")
 
   const [selectedWorkerStatus, setSelectedWorkerStatus] = useState<string | null>(null)
@@ -56,7 +57,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadProductionData()
-    void fetch("/api/production-summary").then(async (response) => {
+    void fetch(`/api/production-summary?date=${visibleDate.toISOString().slice(0, 10)}`).then(async (response) => {
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.error)
       setProductionSummary(payload.summary ?? [])
@@ -83,7 +84,7 @@ export default function DashboardPage() {
           production_tracking (produced_quantity, is_running)
         )
       `)
-      .eq("date", selectedDate.toISOString().split("T")[0])
+      .eq("date", visibleDate.toISOString().split("T")[0])
 
     if (dailyPlans && dailyPlans.length > 0) {
       // Processar dados das linhas
@@ -114,7 +115,7 @@ export default function DashboardPage() {
     const { loadWeeklyPlans, getWeeklyPlans } = await import("@/lib/storage")
     await loadWeeklyPlans()
     const plan = getWeeklyPlans().at(-1)
-    const weekStart = new Date(selectedDate)
+    const weekStart = new Date(visibleDate)
     weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7))
     const nextStart = new Date(weekStart)
     nextStart.setDate(nextStart.getDate() + 7)
@@ -138,13 +139,13 @@ export default function DashboardPage() {
           worker:workers (id, name, employee_id, specialties)
         )
       `)
-      .eq("date", selectedDate.toISOString().split("T")[0])
+      .eq("date", visibleDate.toISOString().split("T")[0])
 
     // Buscar ausências
     const { data: absences } = await supabase
       .from("absences")
       .select("worker_id, reason")
-      .eq("created_at::date", selectedDate.toISOString().split("T")[0])
+      .eq("created_at::date", visibleDate.toISOString().split("T")[0])
 
     // Processar estatísticas por turno
     const stats = {
@@ -193,7 +194,7 @@ export default function DashboardPage() {
             specialty:specialties (name)
           )
         `)
-        .eq("date", selectedDate.toISOString().split("T")[0])
+        .eq("date", visibleDate.toISOString().split("T")[0])
         .eq("shift", shiftMap[selectedShift])
 
       const workers: WorkerDetail[] = []
@@ -217,7 +218,7 @@ export default function DashboardPage() {
         .select(`
           worker:workers (id, name, employee_id)
         `)
-        .eq("created_at::date", selectedDate.toISOString().split("T")[0])
+        .eq("created_at::date", visibleDate.toISOString().split("T")[0])
 
       const workers: WorkerDetail[] =
         data?.map((absence: any) => ({
@@ -250,7 +251,7 @@ export default function DashboardPage() {
         production_tracking (produced_quantity)
       `)
       .eq("line_id", lineId)
-      .eq("daily_plan.date", selectedDate.toISOString().split("T")[0])
+      .eq("daily_plan.date", visibleDate.toISOString().split("T")[0])
       .single()
 
     // Buscar trabalhadores na linha
@@ -261,7 +262,7 @@ export default function DashboardPage() {
         specialty:specialties (name)
       `)
       .eq("line_id", lineId)
-      .eq("schedule_day.date", selectedDate.toISOString().split("T")[0])
+      .eq("schedule_day.date", visibleDate.toISOString().split("T")[0])
 
     const detail: LineDetail = {
       id: lineId,
@@ -319,10 +320,7 @@ export default function DashboardPage() {
           >
             <CardHeader className="pb-2 sm:pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  <Factory className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Linhas de Produção
-                </CardTitle>
+                <div className="flex items-center justify-between gap-2"><CardTitle className="flex items-center gap-2 text-base sm:text-lg"><Factory className="h-4 w-4 sm:h-5 sm:w-5" />Linhas de Produção</CardTitle><div className="flex items-center gap-1"><button type="button" aria-label="Dia anterior" className="rounded-md p-1 hover:bg-muted" onClick={(event) => { event.stopPropagation(); const date = new Date(visibleDate); date.setDate(date.getDate() - 1); setSelectedDate(date) }}><ChevronLeft className="size-4" /></button><span className="text-xs text-muted-foreground">{visibleDate.toLocaleDateString("pt-PT")}</span><button type="button" aria-label="Dia seguinte" className="rounded-md p-1 hover:bg-muted" onClick={(event) => { event.stopPropagation(); const date = new Date(visibleDate); date.setDate(date.getDate() + 1); setSelectedDate(date) }}><ChevronRight className="size-4" /></button></div></div>
                 <Badge variant="outline" className="text-xs">
                   {productionLines.filter((line) => line.isRunning).length} em produção
                 </Badge>
@@ -330,7 +328,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-2 sm:space-y-3">
               {productionSummaryError && <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">{productionSummaryError}</p>}
-              {productionSummary.map((sheet) => <div key={sheet.sheet} className="rounded-lg border bg-card p-3"><div className="mb-2 flex items-center justify-between"><p className="text-sm font-medium capitalize">{sheet.sheet}</p><Badge variant="secondary" className="text-[10px]">{sheet.totalRows} registos</Badge></div><div className="space-y-1">{sheet.rows.slice(0, 3).map((row, index) => <p key={index} className="truncate text-xs text-muted-foreground">{Object.values(row).filter(Boolean).join(" · ")}</p>)}</div></div>)}
+              {productionSummary.flatMap((sheet) => sheet.rows.map((row, index) => <button key={`${sheet.sheet}-${index}`} type="button" className="w-full rounded-lg border bg-card p-3 text-left transition hover:border-primary hover:shadow-sm" onClick={(event) => { event.stopPropagation(); setLineDetail({ id: `${sheet.sheet}-${index}`, name: String(row.Linha ?? row.Line ?? sheet.sheet), description: String(row.Produto ?? row.Product ?? ""), product: String(row.Produto ?? row.Product ?? ""), productDescription: String(row.Descrição ?? row.Description ?? ""), workers: [], produced: Number(row.Quantidade ?? row.Quantity ?? row.Produzido ?? 0), target: Number(row.Meta ?? row.Target ?? 0) }) }}><div className="mb-2 flex items-center justify-between"><p className="text-sm font-medium">{String(row.Linha ?? row.Line ?? sheet.sheet)}</p><Badge variant="secondary" className="text-[10px]">{sheet.sheet}</Badge></div><p className="truncate text-xs text-muted-foreground">{Object.values(row).filter(Boolean).slice(0, 4).join(" · ")}</p></button>))}
               {productionLines.filter((line) => line.isRunning).slice(0, 4).map((line) => (
                 <div key={line.id} className="flex items-center gap-2 rounded-lg border bg-card p-3">
                   <div className="size-2 shrink-0 animate-pulse rounded-full bg-green-500" />

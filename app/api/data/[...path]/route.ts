@@ -26,9 +26,10 @@ async function writeData<T>(key: string, data: T[]): Promise<void> {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
-  const path = params.path.join('/')
+  const { path: pathParts } = await params
+  const path = pathParts.join('/')
   
   try {
     const data = await readData(path)
@@ -40,9 +41,10 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
-  const path = params.path.join('/')
+  const { path: pathParts } = await params
+  const path = pathParts.join('/')
   const body = await request.json()
   
   try {
@@ -64,9 +66,9 @@ export async function POST(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
-  const pathSegments = params.path
+  const { path: pathSegments } = await params
   const id = pathSegments[pathSegments.length - 1]
   const collection = pathSegments.slice(0, -1).join('/')
   const body = await request.json()
@@ -90,9 +92,9 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
-  const pathSegments = params.path
+  const { path: pathSegments } = await params
   const id = pathSegments[pathSegments.length - 1]
   const collection = pathSegments.slice(0, -1).join('/')
   

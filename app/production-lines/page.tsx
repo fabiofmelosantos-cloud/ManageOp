@@ -21,6 +21,7 @@ import {
   deleteProductionLine,
   getProducts,
   addProduct,
+  deleteProduct,
   getSpecialties,
   addSpecialty,
   loadProductionLines,
@@ -120,18 +121,18 @@ export default function ProductionLinesPage() {
       const productRequirement = {
         productId: product.id,
         workersNeeded: plan.workersNeeded,
-        requiredSpecialties: specialtyIds,
+        requiredSpecialties: specialtyIds.map((specialtyId) => ({ specialtyId, quantity: 1 })),
       };
 
       if (line) {
-        const existingReq = line.productRequirements.find(
+        const existingReq = line.requirements.find(
           r => r.productId === product.id
         );
         
         if (!existingReq) {
           const updated = await updateProductionLine(line.id, {
             ...line,
-            productRequirements: [...line.productRequirements, productRequirement],
+            requirements: [...line.requirements, productRequirement],
           });
           if (updated) {
             setLines(prev => prev.map(l => (l.id === updated.id ? updated : l)));
@@ -140,7 +141,8 @@ export default function ProductionLinesPage() {
       } else {
         const newLine = await addProductionLine({
           name: plan.lineName,
-          productRequirements: [productRequirement],
+          requirements: [productRequirement],
+          isActive: true,
         });
         setLines(prev => [...prev, newLine]);
       }

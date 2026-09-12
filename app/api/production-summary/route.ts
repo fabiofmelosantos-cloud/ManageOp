@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   const requestedDate = new URL(request.url).searchParams.get("date")
   try {
     const settings = await getData("spreadsheet_settings") as { url?: string } | null
-    const url = settings?.url ?? ""
+    const url = settings?.url?.trim() ?? ""
     if (!url) return NextResponse.json({ error: "Configure o link da planilha em Configurações." }, { status: 400 })
 
     const sourceUrl = new URL(url)

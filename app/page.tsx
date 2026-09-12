@@ -46,6 +46,8 @@ export default function DashboardPage() {
 
   const [productionLines, setProductionLines] = useState<any[]>([])
   const [weeklyLineCounts, setWeeklyLineCounts] = useState({ current: 0, next: 0 })
+  const [productionSummary, setProductionSummary] = useState<Array<{ sheet: string; rows: Record<string, unknown>[]; totalRows: number }>>([])
+  const [productionSummaryError, setProductionSummaryError] = useState("")
   const [workerStats, setWorkerStats] = useState<any>({
     morning: { working: 0, absent: 0, dc: 0, vacation: 0 },
     afternoon: { working: 0, absent: 0, dc: 0, vacation: 0 },
@@ -54,6 +56,12 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadProductionData()
+    void fetch("/api/production-summary").then(async (response) => {
+      const payload = await response.json()
+      if (!response.ok) throw new Error(payload.error)
+      setProductionSummary(payload.summary ?? [])
+      setProductionSummaryError("")
+    }).catch((error) => setProductionSummaryError(error instanceof Error ? error.message : "Não foi possível ler a planilha."))
   }, [selectedDate])
 
   const loadProductionData = async () => {
@@ -321,14 +329,12 @@ export default function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-2 sm:space-y-3">
+              {productionSummaryError && <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">{productionSummaryError}</p>}
+              {productionSummary.map((sheet) => <div key={sheet.sheet} className="rounded-lg border bg-card p-3"><div className="mb-2 flex items-center justify-between"><p className="text-sm font-medium capitalize">{sheet.sheet}</p><Badge variant="secondary" className="text-[10px]">{sheet.totalRows} registos</Badge></div><div className="space-y-1">{sheet.rows.slice(0, 3).map((row, index) => <p key={index} className="truncate text-xs text-muted-foreground">{Object.values(row).filter(Boolean).join(" · ")}</p>)}</div></div>)}
               {productionLines.filter((line) => line.isRunning).slice(0, 4).map((line) => (
                 <div key={line.id} className="flex items-center gap-2 rounded-lg border bg-card p-3">
                   <div className="size-2 shrink-0 animate-pulse rounded-full bg-green-500" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{line.name}</p>
-                    <p className="truncate text-xs text-muted-foreground">{line.product}</p>
-                  </div>
-                  <span className="shrink-0 text-xs font-medium text-green-600">A operar</span>
+                  <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{line.name}</p><p className="truncate text-xs text-muted-foreground">{line.product}</p></div><span className="shrink-0 text-xs font-medium text-green-600">A operar</span>
                 </div>
               ))}
               {productionLines.filter((line) => line.isRunning).length === 0 && (

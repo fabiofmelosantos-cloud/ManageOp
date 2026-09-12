@@ -9,6 +9,7 @@ import { ScheduleGeneratorForm } from "@/components/schedule/schedule-generator-
 import { TaskGeneratorPanel } from "@/components/schedule/task-generator-panel"
 import { WeeklyPlanManagement } from "@/components/production-plan/weekly-plan-management"
 import { HRManagementPanel } from "@/components/hr/hr-management-panel"
+import { IncidentEvaluationBoard } from "@/components/hr/incident-evaluation-board"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -412,8 +413,8 @@ export default function SettingsPage() {
             <WeeklyPlanManagement />
           </TabsContent>
 
-          <TabsContent value="hr" className="mt-6">
-            <HRManagementPanel />
+<TabsContent value="hr" className="mt-6">
+<div className="space-y-6"><HRManagementPanel /><IncidentEvaluationBoard /></div>
           </TabsContent>
         </Tabs>
       </div>

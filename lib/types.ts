@@ -1,4 +1,4 @@
-export type ShiftType = "morning" | "afternoon"
+export type ShiftType = "morning" | "afternoon" | "night" | "rotativo"
 
 export type SchedulePattern = "5x2" | "4x2" | "5x2-fixed"
 
@@ -167,7 +167,7 @@ export interface ProductionTracking {
   planId: string
   lineId: string
   date: string
-  startTime: string | null
+  startTime?: string | null
   producedQuantity: number
   isRunning: boolean
 }

@@ -137,16 +137,13 @@ export default function SettingsPage() {
   }
 
   const handleEditSchedule = (schedule: any) => {
-    console.log("[v0] handleEditSchedule called with schedule:", schedule)
     setEditingSchedule(schedule)
     setGenerationConfig({
       startDate: schedule.startDate,
       endDate: schedule.endDate,
-      autoAssign: true,
-      considerSkills: true,
+      shifts: ["morning"],
     })
     setGeneratedDays(schedule.days)
-    console.log("[v0] Edit mode activated, config set")
   }
 
   const handleDeleteSchedule = async (scheduleId: string) => {
@@ -168,7 +165,7 @@ export default function SettingsPage() {
         const { getLatestWeeklyPlan } = await import("@/lib/storage")
 
         const productionPlan = getLatestWeeklyPlan()
-        const days = generateSchedule(config, workers, productionLines, productionPlan, specialties)
+        const days = generateSchedule(config, workers, productionLines, productionPlan ?? undefined, specialties)
         setGeneratedDays(days)
 
         const { addSchedule, updateSchedule, loadSchedules, getSchedules } = await import("@/lib/storage")

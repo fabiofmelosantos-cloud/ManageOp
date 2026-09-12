@@ -236,7 +236,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="workers" className="w-full">
+        <Tabs defaultValue="products" className="w-full">
           <div className="overflow-x-auto -mx-2 px-2 pb-2">
             <TabsList className="inline-flex w-full min-w-max sm:grid sm:grid-cols-3 lg:grid-cols-6 h-auto gap-1 sm:gap-2">
               <TabsTrigger
@@ -257,7 +257,7 @@ export default function SettingsPage() {
                 value="products"
                 className="text-xs sm:text-sm lg:text-base py-2.5 sm:py-3 px-3 sm:px-4 whitespace-nowrap"
               >
-                <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" aria-hidden="true" />
                 Produtos
               </TabsTrigger>
               <TabsTrigger

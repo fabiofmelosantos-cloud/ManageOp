@@ -82,6 +82,9 @@ export interface MaterialRequest {
   destinationRoom?: string
   status: MaterialRequestStatus
   requestedAt: string
+  productionDate?: string
+  productionLot?: string
+  productionExpiry?: string
   approvedAt?: string
   transferredAt?: string
   returnedQuantity?: number

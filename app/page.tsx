@@ -306,8 +306,9 @@ export default function DashboardPage() {
               const firstRunningLine = productionLines[0]
               if (firstRunningLine) {
                 setSelectedLine(firstRunningLine.id)
-                loadLineDetails(firstRunningLine.id)
-  }
+                setLineDetail({ id: firstRunningLine.id, name: firstRunningLine.name, description: firstRunningLine.description ?? "Linha de produção", product: firstRunningLine.product ?? "", productDescription: firstRunningLine.productDescription ?? "", workers: [], produced: 0, target: 0 })
+                void loadLineDetails(firstRunningLine.id)
+              }
             }}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {
@@ -315,11 +316,12 @@ export default function DashboardPage() {
                 const firstRunningLine = productionLines.find((line) => line.isRunning) ?? productionLines[0]
                 if (firstRunningLine) {
                   setSelectedLine(firstRunningLine.id)
-                  loadLineDetails(firstRunningLine.id)
+                  setLineDetail({ id: firstRunningLine.id, name: firstRunningLine.name, description: firstRunningLine.description ?? "Linha de produção", product: firstRunningLine.product ?? "", productDescription: firstRunningLine.productDescription ?? "", workers: [], produced: 0, target: 0 })
+                  void loadLineDetails(firstRunningLine.id)
                 }
               }
             }}
-            className="cursor-pointer transition-shadow hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]"
+            className="cursor-pointer select-none transition-shadow hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]"
           >
             <CardHeader className="pb-2 sm:pb-3">
               <div className="flex items-center justify-between">

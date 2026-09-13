@@ -20,6 +20,7 @@ export default function HonetopProductionPage() {
   const [pallets, setPallets] = useState<Pallet[]>([])
   const [history, setHistory] = useState<ProductionState[]>([])
   const [message, setMessage] = useState("")
+  const [loaded, setLoaded] = useState(false)
   const [requesting, setRequesting] = useState(false)
   const [roomRequests, setRoomRequests] = useState<MaterialRequest[]>([])
   const [consume, setConsume] = useState<Record<string, string>>({})
@@ -74,9 +75,17 @@ export default function HonetopProductionPage() {
   useEffect(() => { void import("@/lib/storage").then(({ loadProducts, getProducts }) => loadProducts().then(() => setProducts(getProducts()))).catch(() => {})
     void loadMaterialRequests().then((all) => setRoomRequests(all.filter((request) => request.requester.toLocaleLowerCase().includes("honetop") && request.status === "in_production"))).catch(() => {})
     void fetch("/api/data?key=honetop_mp_pallets").then((response) => response.json()).then((payload) => { if (Array.isArray(payload.data)) setMpPallets(payload.data) }).catch(() => {})
-    void fetch("/api/data?key=honetop_production").then((response) => response.json()).then((payload) => { const saved = payload.data as ProductionState | undefined; if (saved) { setForm({ ...initial, ...saved }); setTubs(saved.tubs ?? 0); setPallets(Array.isArray(saved.pallets) ? saved.pallets : []) } }).catch(() => {})
+    void fetch("/api/data?key=honetop_production").then((response) => response.json()).then((payload) => { const saved = payload.data as ProductionState | undefined; if (saved) { setForm({ ...initial, ...saved }); setTubs(saved.tubs ?? 0); setPallets(Array.isArray(saved.pallets) ? saved.pallets : []) } }).catch(() => {}).finally(() => setLoaded(true))
     void fetch("/api/data?key=honetop_production_history").then((response) => response.json()).then((payload) => { if (Array.isArray(payload.data)) setHistory(payload.data) }).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (!loaded) return
+    const timeout = setTimeout(() => {
+      void fetch("/api/data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "honetop_production", value: { ...form, tubs, pallets } }) }).catch(() => {})
+    }, 500)
+    return () => clearTimeout(timeout)
+  }, [loaded, form, tubs, pallets])
 
   async function consumeRoomStock(request: MaterialRequest) {
     const amount = Number(consume[request.id] ?? 0)

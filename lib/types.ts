@@ -29,7 +29,7 @@ export interface Product {
 }
 
 export type StockCategory = "raw_material" | "packaging"
-export type MaterialRequestStatus = "requested" | "approved" | "transferred" | "in_production" | "returned"
+export type MaterialRequestStatus = "requested" | "approved" | "transferred" | "in_production" | "returned_pending" | "returned"
 export type MaterialLocation = "warehouse" | "intermediate" | "production"
 
 export interface StockItem {
@@ -70,6 +70,7 @@ export interface MaterialRequest {
   quantity: number
   unit: string
   requester: string
+  destinationRoom?: string
   status: MaterialRequestStatus
   requestedAt: string
   approvedAt?: string

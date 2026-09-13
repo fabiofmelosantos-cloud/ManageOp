@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -48,6 +50,7 @@ export default function DashboardPage() {
   const [productionLines, setProductionLines] = useState<any[]>([])
   const [weeklyLineCounts, setWeeklyLineCounts] = useState({ current: 0, next: 0 })
   const [productionSummary, setProductionSummary] = useState<Array<{ sheet: string; rows: Record<string, unknown>[]; totalRows: number }>>([])
+  const [productionInputs, setProductionInputs] = useState({ bags: "", bagWeight: "0.5", tubs: "", produced: "", lot: "", expiry: "", requested: "", palletQuantity: "", palletNumber: "", channel: "HQ" })
   const [productionSummaryError, setProductionSummaryError] = useState("")
   const [workerStats, setWorkerStats] = useState<any>({
     morning: { working: 0, absent: 0, dc: 0, vacation: 0 },
@@ -336,14 +339,14 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-2 sm:space-y-3">
               {productionSummaryError && <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">{productionSummaryError}</p>}
-              {productionSummary.flatMap((sheet) => sheet.rows.map((row, index) => <button key={`${sheet.sheet}-${index}`} type="button" className="w-full rounded-lg border bg-card p-3 text-left transition hover:border-primary hover:shadow-sm" onClick={(event) => { event.stopPropagation(); setLineDetail({ id: `${sheet.sheet}-${index}`, name: String(row.Linha ?? row.Line ?? sheet.sheet), description: String(row.Produto ?? row.Product ?? ""), product: String(row.Produto ?? row.Product ?? ""), productDescription: String(row.Descrição ?? row.Description ?? ""), workers: [], produced: Number(row.Quantidade ?? row.Quantity ?? row.Produzido ?? 0), target: Number(row.Meta ?? row.Target ?? 0) }) }}><div className="mb-2 flex items-center justify-between"><p className="text-sm font-medium">{String(row.Linha ?? row.Line ?? sheet.sheet)}</p><Badge variant="secondary" className="text-[10px]">{sheet.sheet}</Badge></div><p className="truncate text-xs text-muted-foreground">{Object.values(row).filter(Boolean).slice(0, 4).join(" · ")}</p></button>))}
-  {productionLines.filter((line) => line.isRunning).slice(0, 4).map((line) => (
+              {productionSummary.flatMap((sheet) => sheet.rows.map((row, index) => <button key={`${sheet.sheet}-${index}`} type="button" className="w-full rounded-lg border bg-card p-3 text-left transition hover:border-primary hover:shadow-sm" onClick={(event) => { event.stopPropagation(); setSelectedLine(`${sheet.sheet}-${index}`); setLineDetail({ id: `${sheet.sheet}-${index}`, name: String(row.Linha ?? row.Line ?? sheet.sheet), description: String(row.Produto ?? row.Product ?? ""), product: String(row.Produto ?? row.Product ?? ""), productDescription: String(row.Descrição ?? row.Description ?? ""), workers: [], produced: Number(row.Quantidade ?? row.Quantity ?? row.Produzido ?? 0), target: Number(row.Meta ?? row.Target ?? 0) }) }}><div className="mb-2 flex items-center justify-between"><p className="text-sm font-medium">{String(row.Linha ?? row.Line ?? sheet.sheet)}</p><Badge variant="secondary" className="text-[10px]">{sheet.sheet}</Badge></div><p className="truncate text-xs text-muted-foreground">{Object.values(row).filter(Boolean).slice(0, 4).join(" · ")}</p></button>))}
+  {productionLines.map((line) => (
   <button key={line.id} type="button" className="flex w-full items-center gap-2 rounded-lg border bg-card p-3 text-left hover:border-primary" onClick={(event) => { event.stopPropagation(); setSelectedLine(line.id); void loadLineDetails(line.id) }}>
   <div className="size-2 shrink-0 animate-pulse rounded-full bg-green-500" />
   <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{line.name}</p><p className="truncate text-xs text-muted-foreground">{line.product}</p></div><span className="shrink-0 text-xs font-medium text-green-600">A operar</span>
   </button>
   ))}
-              {productionSummary.length === 0 && productionLines.filter((line) => line.isRunning).length === 0 && (
+              {productionSummary.length === 0 && productionLines.length === 0 && (
                 <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">Não foram encontrados registos nas abas honetop e barritas para apresentar.</p>
               )}
               <p className="pt-1 text-center text-xs text-muted-foreground">Clique para ver os detalhes da semana corrente e da próxima.</p>
@@ -538,6 +541,12 @@ export default function DashboardPage() {
                       </div>
                       <Progress value={(lineDetail.produced / lineDetail.target) * 100} />
                     </div>
+                  </div>
+
+                  <div className="space-y-3 rounded-lg border bg-card p-4">
+                    <h3 className="font-semibold">Calculadora de consumos e paletes</h3>
+                    <div className="grid gap-3 sm:grid-cols-2"><div><Label>Sacos entrados na sala</Label><Input type="number" min="0" value={productionInputs.bags} onChange={(e) => setProductionInputs({ ...productionInputs, bags: e.target.value })} /></div><div><Label>Peso do saco</Label><select className="h-10 w-full rounded-md border bg-background px-3" value={productionInputs.bagWeight} onChange={(e) => setProductionInputs({ ...productionInputs, bagWeight: e.target.value })}><option value="0.5">500 g</option><option value="1">1 kg</option></select></div><div><Label>Sacos adicionados a cubas</Label><Input type="number" min="0" value={productionInputs.tubs} onChange={(e) => setProductionInputs({ ...productionInputs, tubs: e.target.value })} /></div><div><Label>Unidades produzidas</Label><Input type="number" min="0" value={productionInputs.produced} onChange={(e) => setProductionInputs({ ...productionInputs, produced: e.target.value })} /></div><div><Label>Lote</Label><Input value={productionInputs.lot} onChange={(e) => setProductionInputs({ ...productionInputs, lot: e.target.value })} /></div><div><Label>Validade</Label><Input type="date" value={productionInputs.expiry} onChange={(e) => setProductionInputs({ ...productionInputs, expiry: e.target.value })} /></div><div><Label>Quantidade requisitada</Label><Input type="number" min="0" value={productionInputs.requested} onChange={(e) => setProductionInputs({ ...productionInputs, requested: e.target.value })} /></div><div><Label>Quantidade da palete</Label><Input type="number" min="0" value={productionInputs.palletQuantity} onChange={(e) => setProductionInputs({ ...productionInputs, palletQuantity: e.target.value })} /></div><div><Label>Número da palete</Label><Input value={productionInputs.palletNumber} onChange={(e) => setProductionInputs({ ...productionInputs, palletNumber: e.target.value })} /></div><div><Label>Destino</Label><select className="h-10 w-full rounded-md border bg-background px-3" value={productionInputs.channel} onChange={(e) => setProductionInputs({ ...productionInputs, channel: e.target.value })}><option value="HQ">HQ</option><option value="B2B">B2B</option></select></div></div>
+                    <div className="grid grid-cols-3 gap-2 text-sm"><div className="rounded-md bg-muted p-2"><span className="text-muted-foreground">Em sala</span><strong className="block">{Math.max(Number(productionInputs.bags) - Number(productionInputs.tubs), 0)} sacos</strong></div><div className="rounded-md bg-muted p-2"><span className="text-muted-foreground">Consumido</span><strong className="block">{Number(productionInputs.tubs) * Number(productionInputs.bagWeight)} kg</strong></div><div className="rounded-md bg-muted p-2"><span className="text-muted-foreground">Produzido</span><strong className="block">{productionInputs.produced || 0} un.</strong></div></div>
                   </div>
 
                   <div>

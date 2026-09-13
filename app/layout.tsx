@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import { AuthProvider } from "@/lib/auth-context"
 import { AppHeader, DateProvider } from "@/components/layout/app-header"
 import { ProtectedWrapper } from "@/components/layout/protected-wrapper"
+import { PageGuide } from "@/components/layout/page-guide"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -48,7 +49,10 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
       <AppHeader />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1">
+        <PageGuide />
+        {children}
+      </main>
     </div>
   )
 }

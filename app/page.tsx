@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import Link from "next/link"
-import { Factory, Users, TrendingUp, AlertCircle, Boxes, CalendarDays, Clock3, LifeBuoy, ListTodo, Palmtree, ChevronLeft, ChevronRight } from "lucide-react"
+import { Factory, Users, TrendingUp, AlertCircle, Boxes, CalendarDays, Clock3, LifeBuoy, ListTodo, Palmtree, ChevronLeft, ChevronRight, FileText } from "lucide-react"
 import { useDateContext } from "@/components/layout/app-header"
 import { getSupabase } from "@/lib/supabase-client"
 import { SupportCard } from "@/components/dashboard/support-card"
@@ -300,9 +300,17 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background pb-6">
       <div className="container mx-auto px-2 sm:px-6 py-3 sm:py-6 space-y-3 sm:space-y-6">
-        <div className="space-y-1.5">
-          <h1 className="text-xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">Visão geral das operações em tempo real</p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-1.5">
+            <h1 className="text-xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Visão geral das operações em tempo real</p>
+          </div>
+          <Button asChild variant="outline" size="sm" className="gap-2 bg-transparent">
+            <a href="/docs/manual-manageop.docx" download>
+              <FileText className="size-4" />
+              Manual (Word)
+            </a>
+          </Button>
         </div>
 
         <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2">

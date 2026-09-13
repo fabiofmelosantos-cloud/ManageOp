@@ -1,7 +1,7 @@
 "use client"
 
 import { FormEvent, useEffect, useState } from "react"
-import { Check, ClipboardCheck, PackageCheck, Truck } from "lucide-react"
+import { Check, ClipboardCheck, PackageCheck, Truck, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,6 +21,12 @@ export function FinishedProductsPage() {
   const filteredItems = items.filter((item) => [item.product, item.lot, item.palletNumber, item.shippedLot, item.shippedPalletNumber, item.warehouseValidatedBy].filter(Boolean).join(" ").toLocaleLowerCase().includes(search.toLocaleLowerCase()))
 
   async function create(event: FormEvent<HTMLFormElement>) { event.preventDefault(); setError(""); const response = await fetch("/api/finished-products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) }); if (!response.ok) return setError("Preencha os dados da palete."); setForm({ ...form, product: "", palletNumber: "", quantity: "", lot: "", expiryDate: "" }); void refresh() }
+  async function removeProduct(id: string) {
+    if (!window.confirm("Eliminar este produto acabado?")) return
+    const response = await fetch(`/api/finished-products?id=${encodeURIComponent(id)}`, { method: "DELETE" })
+    if (response.ok) void refresh()
+  }
+
   async function validate(id: string) { const response = await fetch("/api/finished-products", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, action: "warehouse_validate", validatedBy: "Armazém" }) }); if (response.ok) void refresh() }
   async function ship(id: string) {
     setError("")

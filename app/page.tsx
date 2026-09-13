@@ -303,18 +303,10 @@ export default function DashboardPage() {
             tabIndex={0}
             aria-label="Ver detalhe das linhas de produção"
             onClick={() => {
-              const firstRunningLine = productionLines.find((line) => line.isRunning) ?? productionLines[0]
-              const firstImportedRow = productionSummary.flatMap((sheet) => sheet.rows.map((row, index) => ({ sheet, row, index })))[0]
+              const firstRunningLine = productionLines[0]
               if (firstRunningLine) {
                 setSelectedLine(firstRunningLine.id)
                 loadLineDetails(firstRunningLine.id)
-  } else if (firstImportedRow) {
-  const { sheet, row, index } = firstImportedRow
-  const importedName = String(row.Linha ?? row.Line ?? sheet.sheet)
-  const configuredLine = productionLines.find((line) => line.name?.toLocaleLowerCase() === importedName.toLocaleLowerCase())
-  const importedId = `imported-${sheet.sheet}-${index}`
-  setSelectedLine(importedId)
-  setLineDetail({ id: importedId, name: configuredLine?.name ?? importedName, description: configuredLine?.description ?? `Produção importada da aba ${sheet.sheet}`, product: String(row.Produto ?? row.Product ?? ""), productDescription: String(row.Descrição ?? row.Description ?? ""), workers: [], produced: Number(row.Quantidade ?? row.Quantity ?? row.Produzido ?? 0), target: Number(row.Meta ?? row.Target ?? 0) })
   }
             }}
             onKeyDown={(event) => {
@@ -331,21 +323,19 @@ export default function DashboardPage() {
           >
             <CardHeader className="pb-2 sm:pb-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center justify-between gap-2"><CardTitle className="flex items-center gap-2 text-base sm:text-lg"><Factory className="h-4 w-4 sm:h-5 sm:w-5" />Linhas de Produção</CardTitle><div className="flex items-center gap-1"><button type="button" aria-label="Dia anterior" className="rounded-md p-1 hover:bg-muted" onClick={(event) => { event.stopPropagation(); const date = new Date(visibleDate); date.setDate(date.getDate() - 1); setSelectedDate(date) }}><ChevronLeft className="size-4" /></button><span className="text-xs text-muted-foreground">{visibleDate.toLocaleDateString("pt-PT")}</span><button type="button" aria-label="Dia seguinte" className="rounded-md p-1 hover:bg-muted" onClick={(event) => { event.stopPropagation(); const date = new Date(visibleDate); date.setDate(date.getDate() + 1); setSelectedDate(date) }}><ChevronRight className="size-4" /></button></div></div>
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg"><Factory className="h-4 w-4 sm:h-5 sm:w-5" />Linhas de Produção</CardTitle>
                 <Badge variant="outline" className="text-xs">
-                  {productionSummary.length > 0 ? productionSummary.reduce((total, sheet) => total + sheet.totalRows, 0) : productionLines.filter((line) => line.isRunning).length} em produção
+                  {productionLines.slice(0, 2).length} linhas configuradas
                 </Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-2 sm:space-y-3">
-              {productionSummaryError && <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">{productionSummaryError}</p>}
-              {productionSummary.flatMap((sheet) => sheet.rows.map((row, index) => <button key={`${sheet.sheet}-${index}`} type="button" className="w-full rounded-lg border bg-card p-3 text-left transition hover:border-primary hover:shadow-sm" onClick={(event) => { event.stopPropagation(); setSelectedLine(`${sheet.sheet}-${index}`); setLineDetail({ id: `${sheet.sheet}-${index}`, name: String(row.Linha ?? row.Line ?? sheet.sheet), description: String(row.Produto ?? row.Product ?? ""), product: String(row.Produto ?? row.Product ?? ""), productDescription: String(row.Descrição ?? row.Description ?? ""), workers: [], produced: Number(row.Quantidade ?? row.Quantity ?? row.Produzido ?? 0), target: Number(row.Meta ?? row.Target ?? 0) }) }}><div className="mb-2 flex items-center justify-between"><p className="text-sm font-medium">{String(row.Linha ?? row.Line ?? sheet.sheet)}</p><Badge variant="secondary" className="text-[10px]">{sheet.sheet}</Badge></div><p className="truncate text-xs text-muted-foreground">{Object.values(row).filter(Boolean).slice(0, 4).join(" · ")}</p></button>))}
-  {productionLines.map((line) => (
-  <button key={line.id} type="button" className="flex w-full items-center gap-2 rounded-lg border bg-card p-3 text-left hover:border-primary" onClick={(event) => { event.stopPropagation(); setSelectedLine(line.id); void loadLineDetails(line.id) }}>
-  <div className="size-2 shrink-0 animate-pulse rounded-full bg-green-500" />
-  <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{line.name}</p><p className="truncate text-xs text-muted-foreground">{line.product}</p></div><span className="shrink-0 text-xs font-medium text-green-600">A operar</span>
-  </button>
-  ))}
+              {productionLines.slice(0, 2).map((line) => (
+                <div key={line.id} className="flex items-center gap-2 rounded-lg border bg-card p-3">
+                  <div className="size-2 shrink-0 rounded-full bg-primary" />
+                  <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{line.name}</p><p className="truncate text-xs text-muted-foreground">{line.product || line.description}</p></div>
+                </div>
+              ))}
               {productionSummary.length === 0 && productionLines.length === 0 && (
                 <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">Não foram encontrados registos nas abas honetop e barritas para apresentar.</p>
               )}

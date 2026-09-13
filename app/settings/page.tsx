@@ -40,6 +40,7 @@ export default function SettingsPage() {
   const [spreadsheetSaved, setSpreadsheetSaved] = useState(false)
   const [productName, setProductName] = useState("")
   const [productDescription, setProductDescription] = useState("")
+  const [productMaterials, setProductMaterials] = useState<Array<{ type: "MP" | "ME"; name: string; code: string; quantityPerUnit: string; unit: string }>>([{ type: "MP", name: "", code: "", quantityPerUnit: "1", unit: "kg" }])
   const [isSavingProduct, setIsSavingProduct] = useState(false)
   const [productError, setProductError] = useState("")
 
@@ -117,7 +118,7 @@ export default function SettingsPage() {
     setProductError("")
     try {
       const { addProduct, loadProducts, getProducts } = await import("@/lib/storage")
-      await addProduct({ name, description: productDescription.trim() || undefined })
+      await addProduct({ name, description: productDescription.trim() || undefined, materials: productMaterials.filter((material) => material.name.trim() && material.code.trim()).map((material) => ({ ...material, name: material.name.trim(), code: material.code.trim(), quantityPerUnit: Number(material.quantityPerUnit) || 0 })) })
       await loadProducts()
       setProducts(getProducts())
       setProductName("")
@@ -311,8 +312,9 @@ export default function SettingsPage() {
                     <label htmlFor="product-description" className="text-sm font-medium">Descrição (opcional)</label>
                     <Input id="product-description" value={productDescription} onChange={(event) => setProductDescription(event.target.value)} placeholder="Descrição ou referência interna" />
                   </div>
-                  {productError && <p role="alert" className="text-sm text-destructive">{productError}</p>}
-                  <Button onClick={() => void handleAddProduct()} disabled={isSavingProduct}>
+  <div className="space-y-3 rounded-lg border p-3"><div className="flex items-center justify-between"><p className="text-sm font-medium">Matérias-primas e materiais de embalagem</p><Button type="button" variant="outline" size="sm" onClick={() => setProductMaterials((current) => [...current, { type: "ME", name: "", code: "", quantityPerUnit: "1", unit: "un" }])}><Plus className="size-4" />Adicionar MP/ME</Button></div>{productMaterials.map((material, index) => <div key={index} className="grid gap-2 sm:grid-cols-5"><select className="h-10 rounded-md border bg-background px-3" value={material.type} onChange={(event) => setProductMaterials((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, type: event.target.value as "MP" | "ME" } : item))}><option value="MP">MP</option><option value="ME">ME</option></select><Input placeholder="Nome do material" value={material.name} onChange={(event) => setProductMaterials((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, name: event.target.value } : item))} /><Input placeholder="Código" value={material.code} onChange={(event) => setProductMaterials((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, code: event.target.value } : item))} /><Input type="number" min="0" step="0.001" placeholder="Qtd/unidade" value={material.quantityPerUnit} onChange={(event) => setProductMaterials((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, quantityPerUnit: event.target.value } : item))} /><Input placeholder="Unidade" value={material.unit} onChange={(event) => setProductMaterials((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, unit: event.target.value } : item))} /></div>)}</div>
+  {productError && <p role="alert" className="text-sm text-destructive">{productError}</p>}
+  <Button onClick={() => void handleAddProduct()} disabled={isSavingProduct}>
                     <Plus data-icon="inline-start" />{isSavingProduct ? "A guardar..." : "Criar produto"}
                   </Button>
                 </CardContent>

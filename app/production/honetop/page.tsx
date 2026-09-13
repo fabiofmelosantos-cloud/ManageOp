@@ -102,7 +102,7 @@ export default function HonetopProductionPage() {
         { id: `request_honetop_raw_${Date.now() + 2}`, stockItemId: "honetop-raw-material", materialName: `Matéria-prima · ${form.productName || "Honetop"}`, quantity: requiredRawKg, unit: "kg", requester: "Produção Honetop", destinationRoom: "Honetop", status: "requested", requestedAt: now, productionDate: form.productionDate || new Date().toISOString().slice(0, 10), productionLot: form.productionLot, productionExpiry: form.productionExpiry },
       ]
       await saveMaterialRequests([...current, ...requests])
-      setMessage("Requisiç������������o enviada ao armazém: sacos ME, scoops ME e matéria-prima.")
+      setMessage("Requisição enviada ao armazém: sacos ME, scoops ME e matéria-prima.")
     } finally { setRequesting(false) }
   }
 

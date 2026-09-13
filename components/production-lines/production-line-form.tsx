@@ -376,7 +376,7 @@ export function ProductionLineForm({ line, products, specialties, onSubmit, onCa
                         </div>
 
                         <div className="space-y-2">
-                          <Label>Total de Operadores</Label>
+                          <Label>Operadores permanentes na linha</Label>
                           <Input
                             type="number"
                             min="1"

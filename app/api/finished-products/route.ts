@@ -31,6 +31,14 @@ export async function POST(request: Request) {
   return NextResponse.json(item, { status: 201 })
 }
 
+export async function DELETE(request: Request) {
+  const id = String(new URL(request.url).searchParams.get("id") ?? "")
+  const items = (await getData<FinishedProduct[]>(STORAGE_KEY)) ?? []
+  if (!items.some((item) => item.id === id)) return NextResponse.json({ error: "Palete não encontrada." }, { status: 404 })
+  await setData(STORAGE_KEY, items.filter((item) => item.id !== id))
+  return NextResponse.json({ ok: true })
+}
+
 export async function PATCH(request: Request) {
   const body = await request.json()
   const id = String(body.id ?? "")

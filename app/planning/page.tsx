@@ -3,6 +3,7 @@
 import Link from "next/link"
 
 import { useEffect, useState } from "react"
+import * as XLSX from "xlsx"
 import { ArrowLeft, CalendarDays, WandSparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,7 +11,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export default function PlanningPage() {
   const [workers, setWorkers] = useState<{ id: string; name: string }[]>([])
   const [tasks, setTasks] = useState<{ description: string; worker: string }[]>([])
-  useEffect(() => { import("@/lib/storage").then(async ({ loadWorkers, getWorkers }) => { await loadWorkers(); setWorkers(getWorkers()) }) }, [])
+  const [sourceUrl, setSourceUrl] = useState("")
+  const [sourceRows, setSourceRows] = useState<Record<string, unknown>[]>([])
+  const [sourceError, setSourceError] = useState("")
+  useEffect(() => { import("@/lib/storage").then(async ({ loadWorkers, getWorkers, loadSpreadsheetSettings }) => { await loadWorkers(); setWorkers(getWorkers()); const settings = await loadSpreadsheetSettings(); setSourceUrl(settings.url) }) }, [])
+  const loadProductionPlan = async () => {
+    if (!sourceUrl) { setSourceError("Configure primeiro o link Excel/CSV em Configurações."); return }
+    setSourceError("")
+    try {
+      const response = await fetch(sourceUrl)
+      if (!response.ok) throw new Error("Não foi possível ler a fonte.")
+      const workbook = XLSX.read(await response.arrayBuffer(), { type: "array" })
+      const sheet = workbook.Sheets[workbook.SheetNames[0]]
+      setSourceRows(XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" }))
+    } catch { setSourceError("Não foi possível ler o ficheiro Excel/CSV configurado.") }
+  }
   const generateTasks = () => {
     const descriptions = ["Limpeza das zonas comuns", "Reposição de consumíveis", "Verificação dos dispensadores", "Organização do armazém", "Higienização dos equipamentos"]
     setTasks(descriptions.map((description, index) => ({ description, worker: workers.length ? workers[(index + new Date().getMonth()) % workers.length].name : "A aguardar operadores" })))
@@ -35,7 +50,7 @@ export default function PlanningPage() {
               <div><CardTitle>Planeamento de produção</CardTitle><CardDescription>Organize os planos e necessidades de produção da fábrica.</CardDescription></div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4"><div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-muted-foreground">Quadro mensal de tarefas com rotação automática, sem repetir a distribuição do mês anterior.</p><Button onClick={generateTasks}><WandSparkles className="mr-2 size-4" />Gerar tarefas</Button></div><div className="overflow-x-auto rounded-lg border"><table className="w-full min-w-[600px] text-sm"><thead><tr className="bg-muted/60 text-left"><th className="p-3">Tarefa</th><th className="p-3">Seg</th><th className="p-3">Ter</th><th className="p-3">Qua</th><th className="p-3">Qui</th><th className="p-3">Sex</th></tr></thead><tbody>{tasks.map((task) => <tr key={task.description} className="border-t"><td className="p-3 font-medium">{task.description}</td>{["Seg", "Ter", "Qua", "Qui", "Sex"].map((day) => <td key={day} className="p-3">{task.worker}</td>)}</tr>)}</tbody></table></div>{tasks.length === 0 && <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">Clique em “Gerar tarefas” para criar a distribuição mensal.</p>}</CardContent>
+          <CardContent className="space-y-4"><div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-muted-foreground">Consulte o planeamento de produção diretamente da fonte Excel/CSV configurada.</p><Button onClick={() => void loadProductionPlan}><WandSparkles className="mr-2 size-4" />Ler planeamento</Button></div><div className="overflow-x-auto rounded-lg border"><table className="w-full min-w-[600px] text-sm"><thead><tr className="bg-muted/60 text-left">{(sourceRows.length ? Object.keys(sourceRows[0]) : ["Tarefa", "Responsável"]).map((header) => <th key={header} className="p-3">{header}</th>)}</tr></thead><tbody>{(sourceRows.length ? sourceRows : tasks.map((task) => ({ Tarefa: task.description, Responsável: task.worker }))).map((row, index) => <tr key={index} className="border-t">{Object.values(row).map((value, valueIndex) => <td key={valueIndex} className="p-3">{String(value ?? "")}</td>)}</tr>)}</tbody></table></div>{tasks.length === 0 && <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">Clique em “Ler planeamento” para carregar os dados do ficheiro configurado.</p>}</CardContent>
         </Card>
       </div>
     </main>

@@ -1,13 +1,16 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import Link from "next/link"
-import { Factory, Users, TrendingUp, AlertCircle, Boxes, CalendarDays, Clock3, LifeBuoy, ListTodo, Palmtree } from "lucide-react"
+import { Factory, Users, TrendingUp, AlertCircle, Boxes, CalendarDays, Clock3, LifeBuoy, ListTodo, Palmtree, ChevronLeft, ChevronRight } from "lucide-react"
 import { useDateContext } from "@/components/layout/app-header"
 import { getSupabase } from "@/lib/supabase-client"
 import { SupportCard } from "@/components/dashboard/support-card"
@@ -35,7 +38,8 @@ type LineDetail = {
 }
 
 export default function DashboardPage() {
-  const { selectedDate } = useDateContext()
+  const { selectedDate, setSelectedDate } = useDateContext()
+  const visibleDate = selectedDate ?? new Date()
   const [selectedShift, setSelectedShift] = useState<"morning" | "afternoon">("morning")
 
   const [selectedWorkerStatus, setSelectedWorkerStatus] = useState<string | null>(null)
@@ -46,6 +50,11 @@ export default function DashboardPage() {
 
   const [productionLines, setProductionLines] = useState<any[]>([])
   const [weeklyLineCounts, setWeeklyLineCounts] = useState({ current: 0, next: 0 })
+  const [productionSummary, setProductionSummary] = useState<Array<{ sheet: string; rows: Record<string, unknown>[]; totalRows: number }>>([])
+  const [productionInputs, setProductionInputs] = useState({ bags: "", bagWeight: "0.5", tubs: "", produced: "", lot: "", expiry: "", requested: "", palletQuantity: "", palletNumber: "", channel: "HQ" })
+  const updateProductionInput = (field: keyof typeof productionInputs, value: string) => setProductionInputs((current) => ({ ...current, [field]: value }))
+  const saveProductionInputs = async () => { if (!lineDetail) return; await fetch("/api/data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `production_line_${lineDetail.name.toLowerCase()}`, value: productionInputs }) }) }
+  const [productionSummaryError, setProductionSummaryError] = useState("")
   const [workerStats, setWorkerStats] = useState<any>({
     morning: { working: 0, absent: 0, dc: 0, vacation: 0 },
     afternoon: { working: 0, absent: 0, dc: 0, vacation: 0 },
@@ -53,7 +62,18 @@ export default function DashboardPage() {
   })
 
   useEffect(() => {
+    if (!lineDetail) return
+    void fetch(`/api/data?key=${encodeURIComponent(`production_line_${lineDetail.name.toLowerCase()}`)}`).then((response) => response.json()).then((payload) => { if (payload.data) setProductionInputs((current) => ({ ...current, ...payload.data })) }).catch(() => {})
+  }, [lineDetail])
+
+  useEffect(() => {
     loadProductionData()
+    void fetch(`/api/production-summary?date=${visibleDate.toISOString().slice(0, 10)}`).then(async (response) => {
+      const payload = await response.json()
+      if (!response.ok) throw new Error(payload.error)
+      setProductionSummary(payload.summary ?? [])
+      setProductionSummaryError("")
+    }).catch((error) => setProductionSummaryError(error instanceof Error ? error.message : "Não foi possível ler a planilha."))
   }, [selectedDate])
 
   const loadProductionData = async () => {
@@ -75,7 +95,7 @@ export default function DashboardPage() {
           production_tracking (produced_quantity, is_running)
         )
       `)
-      .eq("date", selectedDate.toISOString().split("T")[0])
+      .eq("date", visibleDate.toISOString().split("T")[0])
 
     if (dailyPlans && dailyPlans.length > 0) {
       // Processar dados das linhas
@@ -106,7 +126,7 @@ export default function DashboardPage() {
     const { loadWeeklyPlans, getWeeklyPlans } = await import("@/lib/storage")
     await loadWeeklyPlans()
     const plan = getWeeklyPlans().at(-1)
-    const weekStart = new Date(selectedDate)
+    const weekStart = new Date(visibleDate)
     weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7))
     const nextStart = new Date(weekStart)
     nextStart.setDate(nextStart.getDate() + 7)
@@ -130,13 +150,13 @@ export default function DashboardPage() {
           worker:workers (id, name, employee_id, specialties)
         )
       `)
-      .eq("date", selectedDate.toISOString().split("T")[0])
+      .eq("date", visibleDate.toISOString().split("T")[0])
 
     // Buscar ausências
     const { data: absences } = await supabase
       .from("absences")
       .select("worker_id, reason")
-      .eq("created_at::date", selectedDate.toISOString().split("T")[0])
+      .eq("created_at::date", visibleDate.toISOString().split("T")[0])
 
     // Processar estatísticas por turno
     const stats = {
@@ -185,7 +205,7 @@ export default function DashboardPage() {
             specialty:specialties (name)
           )
         `)
-        .eq("date", selectedDate.toISOString().split("T")[0])
+        .eq("date", visibleDate.toISOString().split("T")[0])
         .eq("shift", shiftMap[selectedShift])
 
       const workers: WorkerDetail[] = []
@@ -209,7 +229,7 @@ export default function DashboardPage() {
         .select(`
           worker:workers (id, name, employee_id)
         `)
-        .eq("created_at::date", selectedDate.toISOString().split("T")[0])
+        .eq("created_at::date", visibleDate.toISOString().split("T")[0])
 
       const workers: WorkerDetail[] =
         data?.map((absence: any) => ({
@@ -242,7 +262,7 @@ export default function DashboardPage() {
         production_tracking (produced_quantity)
       `)
       .eq("line_id", lineId)
-      .eq("daily_plan.date", selectedDate.toISOString().split("T")[0])
+      .eq("daily_plan.date", visibleDate.toISOString().split("T")[0])
       .single()
 
     // Buscar trabalhadores na linha
@@ -253,7 +273,7 @@ export default function DashboardPage() {
         specialty:specialties (name)
       `)
       .eq("line_id", lineId)
-      .eq("schedule_day.date", selectedDate.toISOString().split("T")[0])
+      .eq("schedule_day.date", visibleDate.toISOString().split("T")[0])
 
     const detail: LineDetail = {
       id: lineId,
@@ -286,132 +306,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2">
-          <Card
-            role="button"
-            tabIndex={0}
-            aria-label="Ver detalhe das linhas de produção"
-            onClick={() => {
-              const firstRunningLine = productionLines.find((line) => line.isRunning) ?? productionLines[0]
-              if (firstRunningLine) {
-                setSelectedLine(firstRunningLine.id)
-                loadLineDetails(firstRunningLine.id)
-              }
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault()
-                const firstRunningLine = productionLines.find((line) => line.isRunning) ?? productionLines[0]
-                if (firstRunningLine) {
-                  setSelectedLine(firstRunningLine.id)
-                  loadLineDetails(firstRunningLine.id)
-                }
-              }
-            }}
-            className="cursor-pointer transition-shadow hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]"
-          >
-            <CardHeader className="pb-2 sm:pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  <Factory className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Linhas de Produção
-                </CardTitle>
-                <Badge variant="outline" className="text-xs">
-                  {productionLines.filter((line) => line.isRunning).length} em produção
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2 sm:space-y-3">
-              {productionLines.filter((line) => line.isRunning).slice(0, 4).map((line) => (
-                <div key={line.id} className="flex items-center gap-2 rounded-lg border bg-card p-3">
-                  <div className="size-2 shrink-0 animate-pulse rounded-full bg-green-500" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{line.name}</p>
-                    <p className="truncate text-xs text-muted-foreground">{line.product}</p>
-                  </div>
-                  <span className="shrink-0 text-xs font-medium text-green-600">A operar</span>
-                </div>
-              ))}
-              {productionLines.filter((line) => line.isRunning).length === 0 && (
-                <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">Nenhuma linha em produção corrente.</p>
-              )}
-              <p className="pt-1 text-center text-xs text-muted-foreground">Clique para ver os detalhes da semana corrente e da próxima.</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2 sm:pb-3">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                <Users className="h-4 w-4 sm:h-5 sm:w-5" />
-                Trabalhadores
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 sm:space-y-3">
-              <Tabs value={selectedShift} onValueChange={(v) => setSelectedShift(v as any)}>
-                <TabsList className="grid w-full grid-cols-2 h-10 sm:h-11 p-1">
-                  <TabsTrigger value="morning" className="text-xs sm:text-sm px-2 sm:px-3">
-                    Turno 1
-                  </TabsTrigger>
-                  <TabsTrigger value="afternoon" className="text-xs sm:text-sm px-2 sm:px-3">
-                    Turno 2
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value={selectedShift} className="space-y-2 mt-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div
-                      onClick={() => {
-                        setSelectedWorkerStatus("working")
-                        loadWorkerDetails("working")
-                      }}
-                      className="p-3 rounded-lg border bg-green-50 dark:bg-green-950 cursor-pointer hover:shadow-md active:scale-95 transition-all touch-manipulation min-h-[70px]"
-                    >
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs font-medium text-green-900 dark:text-green-100">A trabalhar</p>
-                        <TrendingUp className="h-3 w-3 text-green-600" />
-                      </div>
-                      <p className="text-xl font-bold text-green-600 mt-1">{currentStats.working}</p>
-                    </div>
-
-                    <div
-                      onClick={() => {
-                        setSelectedWorkerStatus("absent")
-                        loadWorkerDetails("absent")
-                      }}
-                      className="p-3 rounded-lg border bg-red-50 dark:bg-red-950 cursor-pointer hover:shadow-md active:scale-95 transition-all touch-manipulation min-h-[70px]"
-                    >
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs font-medium text-red-900 dark:text-red-100">Faltas</p>
-                        <AlertCircle className="h-3 w-3 text-red-600" />
-                      </div>
-                      <p className="text-xl font-bold text-red-600 mt-1">{currentStats.absent}</p>
-                    </div>
-
-                    <div
-                      onClick={() => {
-                        setSelectedWorkerStatus("dc")
-                        loadWorkerDetails("dc")
-                      }}
-                      className="p-3 rounded-lg border bg-blue-50 dark:bg-blue-950 cursor-pointer hover:shadow-md active:scale-95 transition-all touch-manipulation min-h-[70px]"
-                    >
-                      <p className="text-xs font-medium text-blue-900 dark:text-blue-100">DC</p>
-                      <p className="text-xl font-bold text-blue-600 mt-1">{currentStats.dc}</p>
-                    </div>
-
-                    <div
-                      onClick={() => {
-                        setSelectedWorkerStatus("vacation")
-                        loadWorkerDetails("vacation")
-                      }}
-                      className="p-3 rounded-lg border bg-purple-50 dark:bg-purple-950 cursor-pointer hover:shadow-md active:scale-95 transition-all touch-manipulation min-h-[70px]"
-                    >
-                      <p className="text-xs font-medium text-purple-900 dark:text-purple-100">Férias</p>
-                      <p className="text-xl font-bold text-purple-600 mt-1">{currentStats.vacation}</p>
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+          {["Honetop", "Barritas"].map((name) => <Link key={name} href={name === "Honetop" ? "/production/honetop" : "/production/barritas"} className="block"><Card className="min-h-[190px] cursor-pointer border-primary/20 transition-shadow hover:shadow-lg"><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Factory className="size-5 text-primary" />{name}</CardTitle></CardHeader><CardContent><p className="text-sm text-muted-foreground">Linha de produção</p><Badge variant="outline" className="mt-4">Abrir produção</Badge></CardContent></Card></Link>)}
         </div>
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
@@ -526,6 +421,12 @@ export default function DashboardPage() {
                       </div>
                       <Progress value={(lineDetail.produced / lineDetail.target) * 100} />
                     </div>
+                  </div>
+
+                  <div className="space-y-3 rounded-lg border bg-card p-4">
+                    <div className="flex items-center justify-between gap-2"><h3 className="font-semibold">Calculadora de consumos e paletes</h3><Button size="sm" onClick={() => void saveProductionInputs}>Guardar</Button></div>
+                    <div className="grid gap-3 sm:grid-cols-2"><div><Label>Sacos entrados na sala</Label><Input type="number" min="0" value={productionInputs.bags} onChange={(e) => setProductionInputs({ ...productionInputs, bags: e.target.value })} /></div><div><Label>Peso do saco</Label><select className="h-10 w-full rounded-md border bg-background px-3" value={productionInputs.bagWeight} onChange={(e) => setProductionInputs({ ...productionInputs, bagWeight: e.target.value })}><option value="0.5">500 g</option><option value="1">1 kg</option></select></div><div><Label>Sacos adicionados a cubas</Label><Input type="number" min="0" value={productionInputs.tubs} onChange={(e) => setProductionInputs({ ...productionInputs, tubs: e.target.value })} /></div><div><Label>Unidades produzidas</Label><Input type="number" min="0" value={productionInputs.produced} onChange={(e) => setProductionInputs({ ...productionInputs, produced: e.target.value })} /></div><div><Label>Lote</Label><Input value={productionInputs.lot} onChange={(e) => setProductionInputs({ ...productionInputs, lot: e.target.value })} /></div><div><Label>Validade</Label><Input type="date" value={productionInputs.expiry} onChange={(e) => setProductionInputs({ ...productionInputs, expiry: e.target.value })} /></div><div><Label>Quantidade requisitada</Label><Input type="number" min="0" value={productionInputs.requested} onChange={(e) => setProductionInputs({ ...productionInputs, requested: e.target.value })} /></div><div><Label>Quantidade da palete</Label><Input type="number" min="0" value={productionInputs.palletQuantity} onChange={(e) => setProductionInputs({ ...productionInputs, palletQuantity: e.target.value })} /></div><div><Label>Número da palete</Label><Input value={productionInputs.palletNumber} onChange={(e) => setProductionInputs({ ...productionInputs, palletNumber: e.target.value })} /></div><div><Label>Destino</Label><select className="h-10 w-full rounded-md border bg-background px-3" value={productionInputs.channel} onChange={(e) => setProductionInputs({ ...productionInputs, channel: e.target.value })}><option value="HQ">HQ</option><option value="B2B">B2B</option></select></div></div>
+                    <div className="grid grid-cols-3 gap-2 text-sm"><div className="rounded-md bg-muted p-2"><span className="text-muted-foreground">Em sala</span><strong className="block">{Math.max(Number(productionInputs.bags) - Number(productionInputs.tubs), 0)} sacos</strong><small>{(Math.max(Number(productionInputs.bags) - Number(productionInputs.tubs), 0) * Number(productionInputs.bagWeight)).toFixed(2)} kg</small></div><div className="rounded-md bg-muted p-2"><span className="text-muted-foreground">Consumido</span><strong className="block">{Number(productionInputs.tubs) * Number(productionInputs.bagWeight)} kg</strong></div><div className="rounded-md bg-muted p-2"><span className="text-muted-foreground">Produzido</span><strong className="block">{productionInputs.produced || 0} un.</strong></div></div>
                   </div>
 
                   <div>

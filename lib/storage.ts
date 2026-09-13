@@ -269,6 +269,16 @@ export async function loadSpreadsheetSettings(): Promise<SpreadsheetSettings> {
   return readFromNeon<SpreadsheetSettings>("spreadsheet_settings", { url: "", updatedAt: "" })
 }
 
+export type EvaluationIncident = { id: string; workerId: string; workerName: string; date: string; type: "positive" | "negative" | "neutral"; description: string; score: number; period: string }
+
+export async function loadEvaluationIncidents(): Promise<EvaluationIncident[]> {
+  return readFromNeon<EvaluationIncident[]>("evaluation_incidents", [])
+}
+
+export async function saveEvaluationIncidents(incidents: EvaluationIncident[]): Promise<void> {
+  await writeToNeon("evaluation_incidents", incidents)
+}
+
 export async function saveSpreadsheetSettings(url: string): Promise<SpreadsheetSettings> {
   const settings = { url: url.trim(), updatedAt: new Date().toISOString() }
   await writeToNeon("spreadsheet_settings", settings)

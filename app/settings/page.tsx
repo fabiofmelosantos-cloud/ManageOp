@@ -9,6 +9,7 @@ import { ScheduleGeneratorForm } from "@/components/schedule/schedule-generator-
 import { TaskGeneratorPanel } from "@/components/schedule/task-generator-panel"
 import { WeeklyPlanManagement } from "@/components/production-plan/weekly-plan-management"
 import { HRManagementPanel } from "@/components/hr/hr-management-panel"
+import { IncidentEvaluationBoard } from "@/components/hr/incident-evaluation-board"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -225,12 +226,17 @@ export default function SettingsPage() {
             <CardTitle>Fonte de dados da empresa</CardTitle>
             <CardDescription>Link Excel/CSV em modo apenas leitura para Planeamento, Horário, Férias, Suporte e Tarefas.</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-3 sm:flex-row">
-            <Input value={spreadsheetUrl} onChange={(event) => setSpreadsheetUrl(event.target.value)} placeholder="https://empresa.pt/ficheiros/operacoes.xlsx" type="url" aria-label="Link da planilha" />
-            <Button onClick={async () => { const { saveSpreadsheetSettings } = await import("@/lib/storage"); await saveSpreadsheetSettings(spreadsheetUrl); setSpreadsheetSaved(true); setTimeout(() => setSpreadsheetSaved(false), 2500) }}>
-              {spreadsheetSaved ? "Guardado" : "Guardar link"}
-            </Button>
-          </CardContent>
+  <CardContent className="flex flex-col gap-3 sm:flex-row">
+ <Input value={spreadsheetUrl} onChange={(event) => setSpreadsheetUrl(event.target.value)} placeholder="https://empresa.pt/ficheiros/operacoes.xlsx" type="url" aria-label="Link da planilha" />
+ <div className="flex shrink-0 gap-2">
+  <Button onClick={async () => { const { saveSpreadsheetSettings } = await import("@/lib/storage"); await saveSpreadsheetSettings(spreadsheetUrl); setSpreadsheetSaved(true); setTimeout(() => setSpreadsheetSaved(false), 2500) }}>
+  {spreadsheetSaved ? "Guardado" : "Guardar link"}
+  </Button>
+  <Button variant="outline" disabled={!spreadsheetUrl.trim()} onClick={async () => { if (!window.confirm("Eliminar o link da fonte de dados?")) return; const { saveSpreadsheetSettings } = await import("@/lib/storage"); await saveSpreadsheetSettings(""); setSpreadsheetUrl(""); setSpreadsheetSaved(false) }}>
+  Eliminar link
+  </Button>
+ </div>
+  </CardContent>
         </Card>
 
         <Tabs defaultValue="products" className="w-full">
@@ -412,8 +418,8 @@ export default function SettingsPage() {
             <WeeklyPlanManagement />
           </TabsContent>
 
-          <TabsContent value="hr" className="mt-6">
-            <HRManagementPanel />
+<TabsContent value="hr" className="mt-6">
+<div className="space-y-6"><HRManagementPanel /><IncidentEvaluationBoard /></div>
           </TabsContent>
         </Tabs>
       </div>

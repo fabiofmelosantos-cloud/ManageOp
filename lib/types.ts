@@ -22,10 +22,19 @@ export interface Worker {
   createdAt: string
 }
 
+export interface ProductMaterial {
+  type: "MP" | "ME"
+  name: string
+  code: string
+  quantityPerUnit: number
+  unit: string
+}
+
 export interface Product {
   id: string
   name: string
   description?: string
+  materials?: ProductMaterial[]
 }
 
 export type StockCategory = "raw_material" | "packaging"

@@ -64,7 +64,7 @@ export default function HonetopProductionPage() {
   const bagsRemaining = 0
   const palletRawKg = rawPerUnit * Number(form.palletQuantity || 0)
   const palletRawBags = Math.ceil(palletRawKg / 25)
-  const canClose = Boolean(form.bagsInRoom && form.totalToProduce && pallets.length && form.lot && form.expiry)
+  const canClose = Boolean(form.productName.trim() && unitsToProduce > 0 && pallets.length > 0 && producedTotal >= unitsToProduce)
 
   useEffect(() => { void import("@/lib/storage").then(({ loadProducts, getProducts }) => loadProducts().then(() => setProducts(getProducts()))).catch(() => {})
     void loadMaterialRequests().then((all) => setRoomRequests(all.filter((request) => request.requester.toLocaleLowerCase().includes("honetop") && request.status === "in_production"))).catch(() => {})
@@ -86,7 +86,7 @@ export default function HonetopProductionPage() {
   }
 
   async function requestMaterials() {
-    if (unitsToProduce <= 0 || bagWeight <= 0) { setMessage("Indique a quantidade a produzir e o peso por unidade."); return }
+    if (unitsToProduce <= 0 || rawPerUnit <= 0) { setMessage("Selecione um produto com receita e indique a quantidade a produzir."); return }
     setRequesting(true)
     try {
       const current = await loadMaterialRequests()
@@ -115,7 +115,7 @@ export default function HonetopProductionPage() {
   async function deletePallet(id: string) { const next = pallets.filter((pallet) => pallet.id !== id); setPallets(next); await save({ pallets: next }) }
   async function deleteHistory(index: number) { const next = history.filter((_, itemIndex) => itemIndex !== index); setHistory(next); await fetch("/api/data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "honetop_production_history", value: next }) }) }
   async function save(overrides: Partial<ProductionState> = {}) { const state = { ...form, tubs, pallets, ...overrides }; await fetch("/api/data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "honetop_production", value: state }) }) }
-  async function closeProduction() { if (!canClose) { setMessage("Preencha os campos obrigatórios e registe pelo menos uma palete."); return } const closed = { ...form, tubs, pallets, closedAt: new Date().toISOString(), summary: { producedBags: producedTotal, rawMaterialKg: producedRawKg + rawWaste, rawMaterialBags: Math.ceil((producedRawKg + rawWaste) / 25), meUnits: producedMeUnits + meWaste, meWaste, rawMaterialWasteKg: rawWaste, remainingBags: remainingToProduce, remainingRawKg } }; const nextHistory = [...history, closed]; setHistory(nextHistory); await Promise.all([save(closed), fetch("/api/data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "honetop_production_history", value: nextHistory }) })]); setMessage("Produção fechada e guardada no histórico.") }
+  async function closeProduction() { if (!canClose) { setMessage("Preencha produto, quantidade e registe paletes até completar a produção."); return } const closedAt = new Date().toISOString(); const materialSummary = recipeMaterials.map((material) => ({ type: material.type, name: material.name, code: material.code, unit: material.unit, quantityUsed: material.quantityPerUnit * producedTotal + (material.type === "MP" ? rawWaste : meWaste) })); const closed = { ...form, tubs, pallets, closedAt, summary: { producedBags: producedTotal, rawMaterialKg: producedRawKg + rawWaste, rawMaterialBags: Math.ceil((producedRawKg + rawWaste) / 25), meUnits: producedMeUnits + meWaste, meWaste, rawMaterialWasteKg: rawWaste, remainingBags: remainingToProduce, remainingRawKg, materialSummary } }; const nextHistory = [...history, closed]; setHistory(nextHistory); await Promise.all([save(closed), fetch("/api/data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "honetop_production_history", value: nextHistory }) })]); setMessage("Produção fechada. Resumo de MP e ME guardado no histórico.") }
   const fields: Array<[keyof typeof initial, string, string]> = []
 
   return <main className="min-h-screen bg-background"><div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-8"><header className="flex flex-wrap items-center justify-between gap-4"><div className="flex items-center gap-3"><Button asChild variant="ghost" size="icon"><Link href="/"><ArrowLeft /></Link></Button><div><p className="text-sm text-muted-foreground">Produção · Linha dedicada</p><h1 className="text-3xl font-bold tracking-tight">Honetop</h1></div></div><Button onClick={() => void closeProduction()}><CheckCircle2 className="mr-2 size-4" />Fechar produção</Button></header>{message && <p role="status" className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">{message}</p>}

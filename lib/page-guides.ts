@@ -104,11 +104,15 @@ export const pageGuides: Record<string, PageGuide> = {
   },
   "/schedules": {
     title: "Como usar os Horários",
-    intro: "Gera o horário do Turno 1 com rotação justa das horas de almoço.",
+    intro:
+      "Gera o horário do Turno 1 com rotação das horas de almoço e controlo de qualidade da linha Honetop hora a hora.",
     steps: [
-      "Selecione o dia a organizar.",
-      "Gere ou ajuste o horário dos trabalhadores.",
-      "Confirme a rotação das horas de almoço.",
+      "Selecione o dia a organizar e gere o horário — cada geração alterna as horas de almoço, ficando sempre diferente da anterior.",
+      "Na primeira hora indique a sala e a tarefa no formato \"Sala / Tarefa\" (ex.: Honetop / Selar); nas horas seguintes repete-se apenas a sala.",
+      "Limpeza fica sempre às 17:00 e Saída às 18:00, mesmo ao propagar a sala.",
+      "No quadro Honetop, o envelope no canto superior direito pisca a vermelho (com som) quando há perguntas de qualidade por responder na hora atual.",
+      "Responda OK / NOK às perguntas de cada hora — às 09:00 há a pergunta extra do teste organolético. Qualquer NOK bloqueia o arranque da linha.",
+      "Pode eliminar horários já gerados através do botão Eliminar em cada cartão do histórico.",
     ],
     connections: [
       { label: "Coordenador", href: "/coordinator", note: "Usa a escala no terreno" },

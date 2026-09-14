@@ -83,7 +83,7 @@ export function ShiftOneBoard() {
     return () => clearInterval(timer)
   }, [])
 
-  const currentQcHour = hours.includes(nowHour) ? nowHour : null
+  const currentQcHour = hours.includes(nowHour) && nowHour !== "17:00" && nowHour !== "18:00" ? nowHour : null
   const currentQuestions = currentQcHour === "09:00" ? [...qcQuestions, organolepticQuestion] : qcQuestions
   const currentAnswers = currentQcHour ? qcAnswers[currentQcHour] ?? {} : {}
   const answeredCount = currentQuestions.filter((question) => currentAnswers[question.id]).length

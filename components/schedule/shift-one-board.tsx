@@ -10,11 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { Worker } from "@/lib/types"
 
 const defaultHours = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"]
-const defaultPositions = ["Suporte", "Hone top / Palete", "Hone top / Máquina", "Hone top", "Hone top", "Hone top", "Suporte", "Hone top", "Limpeza", "Saída"]
-type ScheduleSnapshot = { id: string; date: string; shift: string; hours: string[]; positions: string[]; columns: string[]; assignments: Record<string, string[]> }
+const defaultPositions = ["Honetop / Selar", "Honetop", "Honetop", "Honetop", "Honetop", "Honetop", "Honetop", "Honetop", "Honetop", "Honetop"]
+type ScheduleSnapshot = { id: string; date: string; shift: string; hours: string[]; positions: string[]; columns: string[]; assignments: Record<string, string[]>; lunchOffset?: number }
 
 function dateLabel(date: string) {
   return new Intl.DateTimeFormat("pt-PT", { dateStyle: "full" }).format(new Date(`${date}T12:00:00`))
+}
+
+function roomOf(value: string) {
+  return (value ?? "").split("/")[0].trim()
 }
 
 export function ShiftOneBoard() {
@@ -47,21 +51,32 @@ export function ShiftOneBoard() {
   const workerNames = useMemo(() => workers.map((worker) => worker.name).filter(Boolean), [workers])
   const lunchHours = ["12:00", "13:00", "14:00"]
 
-  function lunchLabel(columnIndex: number, hour: string) {
-    const lunch = lunchHours[columnIndex % lunchHours.length]
-    return hour === lunch ? `Almoço (${lunch})` : "Hone top"
-  }
-
   async function buildSchedule(sourceColumns: string[]) {
+    const lastOffset = history.length ? history[history.length - 1].lunchOffset ?? 0 : -1
+    const offset = (lastOffset + 1) % lunchHours.length
     const next: Record<string, string[]> = {}
     sourceColumns.forEach((name, columnIndex) => {
-      next[name] = hours.map((hour, rowIndex) => lunchHours.includes(hour) ? lunchLabel(columnIndex, hour) : positions[rowIndex] ?? "")
+      const firstHourValue = assignments[name]?.[0] || positions[0] || "Honetop / Selar"
+      const room = roomOf(firstHourValue)
+      const lunch = lunchHours[(columnIndex + offset) % lunchHours.length]
+      next[name] = hours.map((hour, rowIndex) => {
+        if (rowIndex === 0) return firstHourValue
+        if (hour === lunch) return `Almoço (${lunch})`
+        return room
+      })
     })
-    const snapshot: ScheduleSnapshot = { id: `schedule-board-${Date.now()}`, date, shift, hours: [...hours], positions: [...positions], columns: [...sourceColumns], assignments: next }
+    const snapshot: ScheduleSnapshot = { id: `schedule-board-${Date.now()}`, date, shift, hours: [...hours], positions: [...positions], columns: [...sourceColumns], assignments: next, lunchOffset: offset }
     const nextHistory = [...history, snapshot]
     setAssignments(next)
     setHistory(nextHistory)
     setActiveSnapshotId(snapshot.id)
+    await fetch("/api/data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "schedule_board_history", value: nextHistory }) })
+  }
+
+  async function deleteSnapshot(id: string) {
+    const nextHistory = history.filter((snapshot) => snapshot.id !== id)
+    setHistory(nextHistory)
+    if (activeSnapshotId === id) setActiveSnapshotId(null)
     await fetch("/api/data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "schedule_board_history", value: nextHistory }) })
   }
 
@@ -90,7 +105,14 @@ export function ShiftOneBoard() {
   }
 
   function updateCell(column: string, rowIndex: number, value: string) {
-    setAssignments((current) => ({ ...current, [column]: (current[column] ?? Array(hours.length).fill("")).map((entry, index) => index === rowIndex ? value : entry) }))
+    setAssignments((current) => {
+      const existing = current[column] ?? Array(hours.length).fill("")
+      if (rowIndex === 0) {
+        const room = roomOf(value)
+        return { ...current, [column]: existing.map((entry, index) => index === 0 ? value : entry?.startsWith("Almoço") ? entry : room) }
+      }
+      return { ...current, [column]: existing.map((entry, index) => index === rowIndex ? value : entry) }
+    })
   }
 
   function addColumn() {
@@ -128,7 +150,7 @@ export function ShiftOneBoard() {
         {!columns.length && <p className="p-6 text-center text-sm text-muted-foreground">Adicione trabalhadores ou um colaborador manualmente para começar.</p>}
         {history.length > 0 && <section className="space-y-3 border-t pt-4" aria-labelledby="schedule-history-title">
           <div><h2 id="schedule-history-title" className="text-lg font-semibold">Horários anteriores</h2><p className="text-sm text-muted-foreground">Consulte horários já gerados sem substituir o quadro atual.</p></div>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{history.slice().reverse().map((snapshot) => <Card key={snapshot.id} className={snapshot.id === activeSnapshotId ? "border-primary" : ""}><CardHeader className="p-4"><CardTitle className="text-base">{dateLabel(snapshot.date)}</CardTitle><CardDescription>{snapshot.shift === "turno1" ? "Turno 1 · 09:00–18:00" : snapshot.shift} · {snapshot.columns.length} colaboradores</CardDescription></CardHeader><CardContent className="p-4 pt-0"><Button variant={snapshot.id === activeSnapshotId ? "secondary" : "outline"} size="sm" onClick={() => loadSnapshot(snapshot)}>Consultar horário</Button></CardContent></Card>)}</div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{history.slice().reverse().map((snapshot) => <Card key={snapshot.id} className={snapshot.id === activeSnapshotId ? "border-primary" : ""}><CardHeader className="p-4"><CardTitle className="text-base">{dateLabel(snapshot.date)}</CardTitle><CardDescription>{snapshot.shift === "turno1" ? "Turno 1 · 09:00–18:00" : snapshot.shift} · {snapshot.columns.length} colaboradores</CardDescription></CardHeader><CardContent className="flex items-center gap-2 p-4 pt-0"><Button variant={snapshot.id === activeSnapshotId ? "secondary" : "outline"} size="sm" onClick={() => loadSnapshot(snapshot)}>Consultar horário</Button><Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => void deleteSnapshot(snapshot.id)}><Trash2 data-icon="inline-start" />Eliminar</Button></CardContent></Card>)}</div>
         </section>}
       </CardContent>
     </Card>

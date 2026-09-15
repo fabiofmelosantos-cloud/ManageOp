@@ -127,8 +127,21 @@ const doc = new Document({
         para("Mostra os materiais e o stock necessários para cada produto."),
         bullet("Consulte os materiais e quantidades por produto."),
         bullet("Verifique o stock antes de requisitar materiais na produção."),
-        bullet('No quadro "Stock atual", use o botão "Eliminar" no cartão do material para o remover do stock.'),
+        bullet('No quadro "Stock atual" os materiais são apresentados em linhas; use a barra de pesquisa para encontrar qualquer artigo por nome, código ou lote.'),
+        bullet('Use o botão "Eliminar" na linha do material para o remover do stock.'),
+        bullet('No separador "Produção", ao pedir a devolução ao armazém indique no campo "Qtd. a devolver" a quantidade a devolver.'),
         para("Liga a: Linhas de Produção, Honetop.", { muted: true }),
+
+        h2("Gestão"),
+        para("Área de gestão das operações, acessível pelo menu lateral. Reúne os módulos de gestão em cartões."),
+        bullet('Abra o cartão "Qualidade" para consultar o controlo de qualidade da produção.'),
+        para("Liga a: Qualidade, Escalas.", { muted: true }),
+
+        h2("Gestão · Qualidade"),
+        para("Resumo do controlo de qualidade da linha Honetop, respondido hora a hora no quadro de escalas."),
+        bullet("As perguntas OK/NOK são respondidas no envelope de alerta do quadro de escalas."),
+        bullet("Uma resposta NOK bloqueia o arranque da linha; às 09:00 há a pergunta do teste organolético."),
+        para("Liga a: Escalas, Gestão.", { muted: true }),
 
         h2("Planeamento"),
         para("Planeamento geral da produção, que alimenta o plano semanal e o coordenador."),

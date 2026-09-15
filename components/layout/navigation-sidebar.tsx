@@ -16,14 +16,16 @@ interface NavItem {
   roles?: string[] // Se não definido, todos os roles têm acesso
 }
 
+// Nota: os acessos por perfil serão reativados quando a aplicação estiver pronta.
+// Por agora todas as opções estão desbloqueadas para todos os utilizadores.
 const navigation: NavItem[] = [
   { name: "Dashboard", href: "/", icon: Home },
   { name: "Escalas", href: "/schedules", icon: Eye },
-  { name: "Coordenador", href: "/coordinator", icon: Activity, roles: ["admin", "coordinator", "manager"] },
-  { name: "Gestão", href: "/management", icon: LayoutGrid, roles: ["admin", "coordinator", "manager"] },
-  { name: "Plano Semanal", href: "/production-plan", icon: ClipboardList, roles: ["admin", "manager"] },
-  { name: "RH", href: "/hr", icon: User, roles: ["admin", "rh"] },
-  { name: "Configurações", href: "/settings", icon: Settings, roles: ["admin"] },
+  { name: "Coordenador", href: "/coordinator", icon: Activity },
+  { name: "Gestão", href: "/management", icon: LayoutGrid },
+  { name: "Plano Semanal", href: "/production-plan", icon: ClipboardList },
+  { name: "RH", href: "/hr", icon: User },
+  { name: "Configurações", href: "/settings", icon: Settings },
 ]
 
 export function NavigationSidebar() {

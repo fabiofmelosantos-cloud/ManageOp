@@ -23,21 +23,23 @@ export const pageGuides: Record<string, PageGuide> = {
       "Comece por Qualidade para acompanhar o controlo de qualidade da produção.",
     ],
     connections: [
-      { label: "Qualidade", href: "/management/quality", note: "Controlo de qualidade da linha" },
-      { label: "Escalas", href: "/schedules", note: "Respostas de qualidade hora a hora" },
+      { label: "Qualidade", href: "/management/quality", note: "Controlo de qualidade das salas" },
+      { label: "Configurações", href: "/settings", note: "Configurar as perguntas de qualidade" },
     ],
   },
   "/management/quality": {
     title: "Como usar a Qualidade",
     intro:
-      "Resumo do controlo de qualidade da produção. As respostas são dadas hora a hora no quadro de escalas.",
+      "Acompanhe as respostas do controlo de qualidade das salas de produção, agrupadas por sala, lote e dia.",
     steps: [
-      "Abra o quadro de escalas para responder às perguntas de qualidade da hora atual.",
-      "Responda OK/NOK a cada pergunta; uma resposta NOK bloqueia o arranque da linha.",
-      "Às 09:00 existe a pergunta adicional do teste organolético.",
+      "Cada cartão representa uma sala e um lote num dia; mostra as respostas dadas hora a hora.",
+      "O selo indica se o lote está \"Conforme\" ou tem \"Não conformidade\" (alguma resposta NOK).",
+      "As perguntas são definidas em Configurações › Qualidade e respondidas nas salas através do envelope.",
     ],
     connections: [
-      { label: "Escalas", href: "/schedules", note: "Quadro com o envelope de qualidade" },
+      { label: "Configurações", href: "/settings", note: "Configurar as perguntas por sala e hora" },
+      { label: "Honetop", href: "/production/honetop", note: "Sala com envelope de qualidade" },
+      { label: "Barritas", href: "/production/barritas", note: "Sala com envelope de qualidade" },
       { label: "Gestão", href: "/management", note: "Voltar à área de gestão" },
     ],
   },
@@ -73,6 +75,21 @@ export const pageGuides: Record<string, PageGuide> = {
       { label: "Linhas de Produção", href: "/production-lines", note: "Define as receitas usadas aqui" },
       { label: "BOM", href: "/bom", note: "Materiais e stock disponível" },
       { label: "Produtos Acabados", href: "/finished-products", note: "Onde entram as paletes fechadas" },
+      { label: "Dashboard", href: "/", note: "Voltar à visão geral" },
+    ],
+  },
+  "/production/barritas": {
+    title: "Como usar a produção Barritas",
+    intro:
+      "Sala de produção de barritas com controlo de qualidade por envelope, tal como a Honetop.",
+    steps: [
+      "O envelope no canto superior esquerdo pisca (com som) a cada hora, exceto às 17:00 e 18:00.",
+      "Abra o envelope e responda OK / NOK às perguntas definidas pela Qualidade para a hora atual.",
+      "Indique o lote em produção ao responder; as respostas ficam registadas por lote e por dia.",
+    ],
+    connections: [
+      { label: "Qualidade", href: "/management/quality", note: "Ver as respostas registadas" },
+      { label: "Configurações", href: "/settings", note: "Configurar as perguntas da sala" },
       { label: "Dashboard", href: "/", note: "Voltar à visão geral" },
     ],
   },
@@ -133,14 +150,13 @@ export const pageGuides: Record<string, PageGuide> = {
   "/schedules": {
     title: "Como usar os Horários",
     intro:
-      "Gera o horário do Turno 1 com rotação das horas de almoço e controlo de qualidade da linha Honetop hora a hora.",
+      "Gera o horário do Turno 1 com rotação das horas de almoço, sempre diferente da geração anterior.",
     steps: [
       "Selecione o dia a organizar e gere o horário — cada geração alterna as horas de almoço, ficando sempre diferente da anterior.",
       "Na primeira hora indique a sala e a tarefa no formato \"Sala / Tarefa\" (ex.: Honetop / Selar); nas horas seguintes repete-se apenas a sala.",
       "Limpeza fica sempre às 17:00 e Saída às 18:00, mesmo ao propagar a sala.",
-      "No quadro Honetop, o envelope no canto superior direito pisca a vermelho (com som) quando há perguntas de qualidade por responder na hora atual.",
-      "Responda OK / NOK às perguntas de cada hora — às 09:00 há a pergunta extra do teste organolético. Qualquer NOK bloqueia o arranque da linha.",
       "Pode eliminar horários já gerados através do botão Eliminar em cada cartão do histórico.",
+      "O controlo de qualidade deixou de estar aqui: passou para as salas de produção (envelope) e para Gestão › Qualidade.",
     ],
     connections: [
       { label: "Coordenador", href: "/coordinator", note: "Usa a escala no terreno" },
@@ -224,12 +240,14 @@ export const pageGuides: Record<string, PageGuide> = {
   },
   "/settings": {
     title: "Como usar as Configurações",
-    intro: "Configurações do sistema, disponíveis apenas para administradores.",
+    intro: "Configurações do sistema, incluindo as perguntas de controlo de qualidade das salas.",
     steps: [
       "Ajuste as definições gerais da aplicação.",
-      "Gira acessos e parâmetros do sistema.",
+      "Na aba Qualidade, escolha a sala (Honetop ou Barritas) e crie as perguntas do controlo de qualidade.",
+      "Defina se cada pergunta se aplica a todas as horas ou apenas a uma hora específica (ex.: teste organolético às 09:00).",
     ],
     connections: [
+      { label: "Qualidade", href: "/management/quality", note: "Ver as respostas registadas" },
       { label: "RH", href: "/hr", note: "Gestão de pessoas" },
       { label: "Dashboard", href: "/", note: "Voltar à visão geral" },
     ],

@@ -2,7 +2,8 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Users, Package, Calendar, ClipboardList, UserCog, Trash2, Plus } from "lucide-react"
+import { Users, Package, Calendar, ClipboardList, UserCog, Trash2, Plus, ShieldCheck } from "lucide-react"
+import { QualityConfigPanel } from "@/components/quality/quality-config-panel"
 import WorkersPage from "@/app/workers/page"
 import ProductionLinesPage from "@/app/production-lines/page"
 import { ScheduleGeneratorForm } from "@/components/schedule/schedule-generator-form"
@@ -242,7 +243,7 @@ export default function SettingsPage() {
 
         <Tabs defaultValue="products" className="w-full">
           <div className="overflow-x-auto -mx-2 px-2 pb-2">
-            <TabsList className="inline-flex w-full min-w-max sm:grid sm:grid-cols-3 lg:grid-cols-6 h-auto gap-1 sm:gap-2">
+            <TabsList className="inline-flex w-full min-w-max sm:grid sm:grid-cols-3 lg:grid-cols-7 h-auto gap-1 sm:gap-2">
               <TabsTrigger
                 value="workers"
                 className="text-xs sm:text-sm lg:text-base py-2.5 sm:py-3 px-3 sm:px-4 whitespace-nowrap"
@@ -284,6 +285,13 @@ export default function SettingsPage() {
               >
                 <UserCog className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                 RH
+              </TabsTrigger>
+              <TabsTrigger
+                value="quality"
+                className="text-xs sm:text-sm lg:text-base py-2.5 sm:py-3 px-3 sm:px-4 whitespace-nowrap"
+              >
+                <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                Qualidade
               </TabsTrigger>
             </TabsList>
           </div>
@@ -422,6 +430,10 @@ export default function SettingsPage() {
 
 <TabsContent value="hr" className="mt-6">
 <div className="space-y-6"><HRManagementPanel /><IncidentEvaluationBoard /></div>
+          </TabsContent>
+
+          <TabsContent value="quality" className="mt-6">
+            <QualityConfigPanel />
           </TabsContent>
         </Tabs>
       </div>

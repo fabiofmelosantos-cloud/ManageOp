@@ -123,6 +123,13 @@ const doc = new Document({
         ),
         para("Liga a: Linhas de Produção (receitas), BOM (materiais), Produtos Acabados.", { muted: true }),
 
+        h2("Produção Barritas"),
+        para("Sala de produção de barritas com controlo de qualidade por envelope, tal como a Honetop."),
+        bullet("O envelope no canto superior esquerdo pisca e emite um sinal sonoro a cada hora, exceto às 17:00 e 18:00."),
+        bullet("Abra o envelope e responda OK / NOK às perguntas definidas pela Qualidade para a hora atual."),
+        bullet("Indique o lote em produção ao responder; as respostas ficam registadas por lote e por dia em Gestão › Qualidade."),
+        para("Liga a: Qualidade, Configurações.", { muted: true }),
+
         h2("BOM (Lista de Materiais)"),
         para("Mostra os materiais e o stock necessários para cada produto."),
         bullet("Consulte os materiais e quantidades por produto."),
@@ -134,14 +141,15 @@ const doc = new Document({
 
         h2("Gestão"),
         para("Área de gestão das operações, acessível pelo menu lateral. Reúne os módulos de gestão em cartões."),
-        bullet('Abra o cartão "Qualidade" para consultar o controlo de qualidade da produção.'),
-        para("Liga a: Qualidade, Escalas.", { muted: true }),
+        bullet('Abra o cartão "Qualidade" para consultar o controlo de qualidade das salas de produção.'),
+        para("Liga a: Qualidade, Configurações.", { muted: true }),
 
         h2("Gestão · Qualidade"),
-        para("Resumo do controlo de qualidade da linha Honetop, respondido hora a hora no quadro de escalas."),
-        bullet("As perguntas OK/NOK são respondidas no envelope de alerta do quadro de escalas."),
-        bullet("Uma resposta NOK bloqueia o arranque da linha; às 09:00 há a pergunta do teste organolético."),
-        para("Liga a: Escalas, Gestão.", { muted: true }),
+        para("Acompanhamento das respostas do controlo de qualidade das salas de produção, agrupadas por sala, lote e dia."),
+        bullet("Cada cartão representa uma sala e um lote num dia, mostrando as respostas dadas hora a hora."),
+        bullet('O selo indica se o lote está "Conforme" ou tem "Não conformidade" (alguma resposta NOK).'),
+        bullet("As perguntas são configuradas em Configurações › Qualidade e respondidas nas salas através do envelope."),
+        para("Liga a: Configurações, Honetop, Barritas.", { muted: true }),
 
         h2("Planeamento"),
         para("Planeamento geral da produção, que alimenta o plano semanal e o coordenador."),
@@ -162,19 +170,13 @@ const doc = new Document({
 
         h2("Horários"),
         para(
-          "Gera o horário do Turno 1 com rotação das horas de almoço e integra o controlo de qualidade da linha Honetop hora a hora.",
+          "Gera o horário do Turno 1 com rotação das horas de almoço, sempre diferente da geração anterior.",
         ),
         bullet("Selecione o dia a organizar e gere o horário; cada geração alterna as horas de almoço, ficando sempre diferente da anterior."),
         bullet("Na primeira hora indique a sala e a tarefa no formato \"Sala / Tarefa\" (ex.: Honetop / Selar); nas horas seguintes repete-se apenas a sala."),
         bullet("Limpeza fica sempre às 17:00 e Saída às 18:00, mesmo ao propagar a sala às restantes horas."),
         bullet("Pode eliminar horários já gerados através do botão Eliminar em cada cartão do histórico."),
-        para("Controlo de qualidade (linha Honetop):", { muted: true }),
-        bullet("O envelope no canto superior direito do quadro Honetop pisca a vermelho e emite um sinal sonoro quando há perguntas por responder na hora atual."),
-        bullet("As perguntas de cada hora são: Zona de produção limpa e sem objetos estranhos? / Teste de arranque executado? / Selamento validado? / Lote validado? — cada uma com resposta OK ou NOK."),
-        bullet("Apenas na primeira hora (09:00) há a pergunta adicional: Teste organolético com resultado ok?"),
-        bullet("Qualquer resposta NOK bloqueia o arranque da linha até ser corrigida."),
-        bullet("O controlo de qualidade e os alarmes não são executados às 17:00 (Limpeza) nem às 18:00 (Saída)."),
-        para("Nota: o sinal sonoro toca após a primeira interação com a página (política de autoplay dos navegadores).", { muted: true }),
+        para("Nota: o controlo de qualidade deixou de estar nas escalas — passou para as salas de produção (envelope) e para Gestão › Qualidade.", { muted: true }),
         para("Liga a: Coordenador, RH, Trabalhadores.", { muted: true }),
 
         h2("Recursos Humanos"),
@@ -206,7 +208,10 @@ const doc = new Document({
         para("Área para pedir ajuda e reportar problemas."),
 
         h2("Configurações"),
-        para("Configurações do sistema, disponíveis apenas para administradores."),
+        para("Configurações do sistema, incluindo a aba Qualidade para o controlo de qualidade das salas."),
+        bullet("Na aba Qualidade, escolha a sala (Honetop ou Barritas) e crie as perguntas do controlo de qualidade."),
+        bullet("Defina se cada pergunta se aplica a todas as horas ou apenas a uma hora específica (ex.: teste organolético às 09:00)."),
+        bullet("As perguntas surgem no envelope da sala e as respostas ficam visíveis em Gestão › Qualidade."),
 
         h2("Logs de Auditoria"),
         para("Registo das ações realizadas no sistema, para controlo e rastreabilidade."),

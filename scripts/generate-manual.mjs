@@ -127,6 +127,7 @@ const doc = new Document({
         para("Mostra os materiais e o stock necessários para cada produto."),
         bullet("Consulte os materiais e quantidades por produto."),
         bullet("Verifique o stock antes de requisitar materiais na produção."),
+        bullet('No quadro "Stock atual", use o botão "Eliminar" no cartão do material para o remover do stock.'),
         para("Liga a: Linhas de Produção, Honetop.", { muted: true }),
 
         h2("Planeamento"),

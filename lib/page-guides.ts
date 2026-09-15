@@ -56,6 +56,7 @@ export const pageGuides: Record<string, PageGuide> = {
     steps: [
       "Consulte os materiais e quantidades associados a cada produto.",
       "Verifique o stock disponível antes de requisitar materiais na produção.",
+      "No quadro \"Stock atual\", use o botão \"Eliminar\" no cartão do material para o remover do stock.",
     ],
     connections: [
       { label: "Linhas de Produção", href: "/production-lines", note: "Origem das receitas" },

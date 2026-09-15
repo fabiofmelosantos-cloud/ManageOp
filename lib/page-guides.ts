@@ -101,6 +101,8 @@ export const pageGuides: Record<string, PageGuide> = {
       "Consulte os materiais e quantidades associados a cada produto.",
       "Verifique o stock disponível antes de requisitar materiais na produção.",
       "No quadro \"Stock atual\", use o botão \"Eliminar\" no cartão do material para o remover do stock.",
+      "No separador \"Produto acabado\", as paletes aparecem em linhas: use a barra de pesquisa (produto, palete ou lote) e o filtro (Tudo, data de produção, lote ou data de registo) para as encontrar.",
+      "Clique no lápis de uma palete para editar os seus dados (produto, palete, quantidade, lote, validade, data de produção e destino HQ/B2B) e guarde.",
     ],
     connections: [
       { label: "Linhas de Produção", href: "/production-lines", note: "Origem das receitas" },

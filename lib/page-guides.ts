@@ -67,7 +67,7 @@ export const pageGuides: Record<string, PageGuide> = {
       "1. Preparar produção: escolha o produto, a quantidade e o lote de produção acabado.",
       "2. Requisitar materiais ao armazém, indicando a data da produção a que se refere.",
       "3. Fechar as paletes de matéria-prima recebida (sacos completos, sacos de menor valor em kg, lote e validade). Os sacos de menor valor entram diretamente em kg e somam ao total.",
-      "4. Definir a produção do dia, arrancar o cronómetro, indicar operadores e acompanhar o consumo.",
+      "4. Definir a produção do dia, arrancar o cronómetro e indicar operadores. O consumo real de matéria-prima é calculado automaticamente: MP que entrou na sala (ponto 3) menos a sobra indicada no campo \"Sobra de MP (kg)\".",
       "5. Registar as paletes de produto acabado (quantidade, lote, validade e destino).",
       "6. Rever tudo e fechar a produção para gerar o resumo com tempos e horas-homem.",
     ],

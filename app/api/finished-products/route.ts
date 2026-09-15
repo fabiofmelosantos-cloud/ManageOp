@@ -17,6 +17,7 @@ export async function POST(request: Request) {
   const quantity = Number(body.quantity)
   const expiryDate = String(body.expiryDate ?? "").trim()
   const productionDate = String(body.productionDate ?? "").trim()
+  const channel: FinishedProduct["channel"] = String(body.channel ?? "").trim() === "B2B" ? "B2B" : "HQ"
 
   if (!product || !palletNumber || !lot || !expiryDate || !productionDate || !Number.isFinite(quantity) || quantity <= 0) {
     return NextResponse.json({ error: "Preencha todos os dados da produção." }, { status: 400 })
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
 
   const item: FinishedProduct = {
     id: crypto.randomUUID(), palletNumber, product, quantity, unit: "unidades", lot, expiryDate, productionDate,
-    channel: "HQ", createdAt: new Date().toISOString(),
+    channel, createdAt: new Date().toISOString(),
   }
   const items = (await getData<FinishedProduct[]>(STORAGE_KEY)) ?? []
   await setData(STORAGE_KEY, [item, ...items])

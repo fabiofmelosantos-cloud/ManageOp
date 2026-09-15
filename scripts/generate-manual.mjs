@@ -114,7 +114,7 @@ const doc = new Document({
         numbered("Preparar produção: escolha o produto, a quantidade e o lote de produção acabado.", "honetop-steps"),
         numbered("Requisitar materiais ao armazém, indicando a data da produção a que se refere.", "honetop-steps"),
         numbered("Fechar as paletes de matéria-prima recebida (sacos completos, sacos de menor valor em kg, lote e validade). Os sacos de menor valor entram diretamente em kg e somam ao total.", "honetop-steps"),
-        numbered("Definir a produção do dia, arrancar o cronómetro e indicar operadores. A MP real consumida (MP que entrou no ponto 3 menos a sobra real indicada no campo \"Sobra de MP (kg)\") é apresentada em kg e em sacos de matéria-prima de 25 kg. A sobra teórica mostra a diferença entre o consumo real e o teórico dos sacos produzidos, e o ME consumido é detalhado em sacos e scoops. Ao fechar a produção, o cronómetro do tempo decorrido reinicia automaticamente.", "honetop-steps"),
+        numbered("Definir a produção do dia, arrancar o cronómetro e indicar operadores. A MP real consumida (MP que entrou no ponto 3 menos a sobra real indicada no campo \"Sobra de MP (kg)\") é apresentada em kg e em sacos inteiros de matéria-prima de 25 kg mais o restante em kg (ex.: 28 sacos de 25 kg + 2 kg). A sobra teórica mostra a diferença entre o consumo real e o teórico dos sacos produzidos, e o ME consumido é detalhado em sacos e scoops. Ao fechar a produção, o cronómetro do tempo decorrido reinicia automaticamente.", "honetop-steps"),
         numbered("Registar as paletes de produto acabado (quantidade, lote, validade e destino).", "honetop-steps"),
         numbered("Rever tudo e fechar a produção para gerar o resumo com tempos e horas-homem.", "honetop-steps"),
         para(

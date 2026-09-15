@@ -113,7 +113,7 @@ const doc = new Document({
         para("Fluxo sequencial da linha Honetop. Siga os pontos pela ordem:"),
         numbered("Preparar produção: escolha o produto, a quantidade e o lote de produção acabado.", "honetop-steps"),
         numbered("Requisitar materiais ao armazém, indicando a data da produção a que se refere.", "honetop-steps"),
-        numbered("Fechar as paletes de matéria-prima recebida (sacos, lote e validade).", "honetop-steps"),
+        numbered("Fechar as paletes de matéria-prima recebida (sacos completos, sacos de menor valor em kg, lote e validade). Os sacos de menor valor entram diretamente em kg e somam ao total.", "honetop-steps"),
         numbered("Definir a produção do dia, arrancar o cronómetro, indicar operadores e acompanhar o consumo.", "honetop-steps"),
         numbered("Registar as paletes de produto acabado (quantidade, lote, validade e destino).", "honetop-steps"),
         numbered("Rever tudo e fechar a produção para gerar o resumo com tempos e horas-homem.", "honetop-steps"),

@@ -14,6 +14,33 @@ export type PageGuide = {
 // Guia de utilização mostrado no topo de cada página.
 // A chave é a rota exata (pathname). Rotas sem entrada (ex.: login) não mostram guia.
 export const pageGuides: Record<string, PageGuide> = {
+  "/management": {
+    title: "Como usar a Gestão",
+    intro:
+      "Ponto de entrada para os módulos de gestão das operações. Escolha um cartão para abrir o módulo pretendido.",
+    steps: [
+      "Clique no cartão do módulo que pretende gerir.",
+      "Comece por Qualidade para acompanhar o controlo de qualidade da produção.",
+    ],
+    connections: [
+      { label: "Qualidade", href: "/management/quality", note: "Controlo de qualidade da linha" },
+      { label: "Escalas", href: "/schedules", note: "Respostas de qualidade hora a hora" },
+    ],
+  },
+  "/management/quality": {
+    title: "Como usar a Qualidade",
+    intro:
+      "Resumo do controlo de qualidade da produção. As respostas são dadas hora a hora no quadro de escalas.",
+    steps: [
+      "Abra o quadro de escalas para responder às perguntas de qualidade da hora atual.",
+      "Responda OK/NOK a cada pergunta; uma resposta NOK bloqueia o arranque da linha.",
+      "Às 09:00 existe a pergunta adicional do teste organolético.",
+    ],
+    connections: [
+      { label: "Escalas", href: "/schedules", note: "Quadro com o envelope de qualidade" },
+      { label: "Gestão", href: "/management", note: "Voltar à área de gestão" },
+    ],
+  },
   "/": {
     title: "Como usar o Dashboard",
     intro:
@@ -56,6 +83,7 @@ export const pageGuides: Record<string, PageGuide> = {
     steps: [
       "Consulte os materiais e quantidades associados a cada produto.",
       "Verifique o stock disponível antes de requisitar materiais na produção.",
+      "No quadro \"Stock atual\", use o botão \"Eliminar\" no cartão do material para o remover do stock.",
     ],
     connections: [
       { label: "Linhas de Produção", href: "/production-lines", note: "Origem das receitas" },

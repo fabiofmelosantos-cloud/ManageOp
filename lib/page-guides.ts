@@ -67,7 +67,7 @@ export const pageGuides: Record<string, PageGuide> = {
       "1. Preparar produção: escolha o produto, a quantidade e o lote de produção acabado.",
       "2. Requisitar materiais ao armazém, indicando a data da produção a que se refere.",
       "3. Fechar as paletes de matéria-prima recebida (sacos completos, sacos de menor valor em kg, lote e validade). Os sacos de menor valor entram diretamente em kg e somam ao total.",
-      "4. Definir a produção do dia, arrancar o cronómetro, indicar operadores e acompanhar o consumo.",
+      "4. Definir a produção do dia, arrancar o cronómetro e indicar operadores. A MP real consumida (MP que entrou no ponto 3 menos a sobra real) aparece em kg e em sacos inteiros de 25 kg mais o resto em kg (ex.: 28 sacos de 25 kg + 2 kg); a sobra teórica compara o consumo real com o teórico dos sacos produzidos; o ME consumido é detalhado em sacos e scoops. Ao fechar a produção, o cronómetro reinicia automaticamente.",
       "5. Registar as paletes de produto acabado (quantidade, lote, validade e destino).",
       "6. Rever tudo e fechar a produção para gerar o resumo com tempos e horas-homem.",
     ],
@@ -101,6 +101,8 @@ export const pageGuides: Record<string, PageGuide> = {
       "Consulte os materiais e quantidades associados a cada produto.",
       "Verifique o stock disponível antes de requisitar materiais na produção.",
       "No quadro \"Stock atual\", use o botão \"Eliminar\" no cartão do material para o remover do stock.",
+      "No separador \"Produto acabado\", as paletes aparecem em linhas: use a barra de pesquisa (produto, palete ou lote) e o filtro (Tudo, data de produção, lote ou data de registo) para as encontrar.",
+      "Clique no lápis de uma palete para editar os seus dados (produto, palete, quantidade, lote, validade, data de produção e destino HQ/B2B) e guarde.",
     ],
     connections: [
       { label: "Linhas de Produção", href: "/production-lines", note: "Origem das receitas" },

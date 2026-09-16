@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ShieldCheck } from "lucide-react"
+import { Factory, ShieldCheck } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 const managementCards = [
@@ -8,6 +8,12 @@ const managementCards = [
     description: "Controlo de qualidade da produção: verificações hora a hora, bloqueios de arranque e registos.",
     href: "/management/quality",
     icon: ShieldCheck,
+  },
+  {
+    title: "Produção",
+    description: "Backup do histórico de produções fechadas, separado por dia de produção.",
+    href: "/management/production",
+    icon: Factory,
   },
 ]
 

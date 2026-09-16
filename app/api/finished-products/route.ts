@@ -4,6 +4,18 @@ import type { FinishedProduct } from "@/lib/types"
 
 const STORAGE_KEY = "finished_products"
 
+function findDuplicatePallet(items: FinishedProduct[], palletNumber: string, excludeId?: string) {
+  const normalized = palletNumber.trim().toLocaleLowerCase()
+  return items.find((entry) => entry.id !== excludeId && entry.palletNumber.trim().toLocaleLowerCase() === normalized)
+}
+
+function duplicatePalletResponse(existing: FinishedProduct, channel: FinishedProduct["channel"]) {
+  const message = existing.channel !== channel
+    ? `Já existe a palete ${existing.palletNumber} registada como ${existing.channel} (esta produção indica ${channel}). Edite o registo existente para corrigir.`
+    : `Já existe a palete ${existing.palletNumber} registada. Edite o registo existente ou corrija o número.`
+  return NextResponse.json({ error: message, existingId: existing.id, existingChannel: existing.channel }, { status: 409 })
+}
+
 export async function GET() {
   const items = (await getData<FinishedProduct[]>(STORAGE_KEY)) ?? []
   return NextResponse.json(items.sort((a, b) => (b.shippedAt ?? b.createdAt).localeCompare(a.shippedAt ?? a.createdAt)))
@@ -23,11 +35,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Preencha todos os dados da produção." }, { status: 400 })
   }
 
+  const items = (await getData<FinishedProduct[]>(STORAGE_KEY)) ?? []
+  const duplicate = findDuplicatePallet(items, palletNumber)
+  if (duplicate) return duplicatePalletResponse(duplicate, channel)
+
   const item: FinishedProduct = {
     id: crypto.randomUUID(), palletNumber, product, quantity, unit: "unidades", lot, expiryDate, productionDate,
     channel, createdAt: new Date().toISOString(),
   }
-  const items = (await getData<FinishedProduct[]>(STORAGE_KEY)) ?? []
   await setData(STORAGE_KEY, [item, ...items])
   return NextResponse.json(item, { status: 201 })
 }
@@ -58,6 +73,8 @@ export async function PATCH(request: Request) {
     if (!product || !palletNumber || !lot || !expiryDate || !productionDate || !Number.isFinite(quantity) || quantity <= 0) {
       return NextResponse.json({ error: "Preencha todos os dados da produção." }, { status: 400 })
     }
+    const duplicate = findDuplicatePallet(items, palletNumber, id)
+    if (duplicate) return duplicatePalletResponse(duplicate, channel)
     const edited: FinishedProduct = { ...item, product, palletNumber, lot, quantity, expiryDate, productionDate, channel }
     await setData(STORAGE_KEY, items.map((entry) => entry.id === id ? edited : entry))
     return NextResponse.json(edited)

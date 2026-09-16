@@ -204,6 +204,7 @@ const doc = new Document({
         para("Registo e consulta das paletes de produto acabado, que chegam do fecho da produção Honetop."),
         para("No separador \"Produto acabado\" do BOM, as paletes surgem em linhas com pesquisa (produto, palete ou lote) e um filtro por Tudo, data de produção, lote ou data de registo."),
         para("Cada linha tem um botão de edição (lápis) para corrigir os dados da palete — produto, palete, quantidade, lote, validade, data de produção e destino HQ/B2B."),
+        para("Na página de Saída de Produto Acabado, cada linha tem também botões para editar (enquanto não estiver expedida) e eliminar a palete, além de validar armazém e registar a expedição."),
         para("Liga a: Honetop, Dashboard.", { muted: true }),
 
         h2("Suporte"),

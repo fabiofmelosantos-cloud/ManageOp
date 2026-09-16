@@ -225,6 +225,7 @@ export const pageGuides: Record<string, PageGuide> = {
     steps: [
       "Consulte as paletes de produto acabado registadas.",
       "As paletes chegam aqui quando fecha a produção na linha Honetop.",
+      "Cada linha tem botões para editar (produto, palete, quantidade, lote, validade, data de produção e destino) e eliminar. A edição fica disponível enquanto a palete não estiver expedida.",
     ],
     connections: [
       { label: "Honetop", href: "/production/honetop", note: "Onde as paletes são registadas" },

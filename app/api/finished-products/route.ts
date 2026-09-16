@@ -47,6 +47,22 @@ export async function PATCH(request: Request) {
   const item = items.find((entry) => entry.id === id)
   if (!item) return NextResponse.json({ error: "Palete não encontrada." }, { status: 404 })
 
+  if (body.action === "edit") {
+    const product = String(body.product ?? "").trim()
+    const palletNumber = String(body.palletNumber ?? "").trim()
+    const lot = String(body.lot ?? "").trim()
+    const quantity = Number(body.quantity)
+    const expiryDate = String(body.expiryDate ?? "").trim()
+    const productionDate = String(body.productionDate ?? "").trim()
+    const channel: FinishedProduct["channel"] = String(body.channel ?? "").trim() === "B2B" ? "B2B" : "HQ"
+    if (!product || !palletNumber || !lot || !expiryDate || !productionDate || !Number.isFinite(quantity) || quantity <= 0) {
+      return NextResponse.json({ error: "Preencha todos os dados da produção." }, { status: 400 })
+    }
+    const edited: FinishedProduct = { ...item, product, palletNumber, lot, quantity, expiryDate, productionDate, channel }
+    await setData(STORAGE_KEY, items.map((entry) => entry.id === id ? edited : entry))
+    return NextResponse.json(edited)
+  }
+
   const updated: FinishedProduct = body.action === "warehouse_validate"
     ? { ...item, warehouseValidatedAt: new Date().toISOString(), warehouseValidatedBy: String(body.validatedBy ?? "Armazém") }
     : body.action === "ship"

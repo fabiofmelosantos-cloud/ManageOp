@@ -205,6 +205,7 @@ const doc = new Document({
         para("No separador \"Produto acabado\" do BOM, as paletes surgem em linhas com pesquisa (produto, palete ou lote) e um filtro por Tudo, data de produção, lote ou data de registo."),
         para("Cada linha tem um botão de edição (lápis) para corrigir os dados da palete — produto, palete, quantidade, lote, validade, data de produção e destino HQ/B2B."),
         para("Na página de Saída de Produto Acabado, cada linha tem também botões para editar (enquanto não estiver expedida) e eliminar a palete, além de validar armazém e registar a expedição."),
+        para("A página tem pesquisa e ordenação (por ordem de entrada, lote ou quantidade, crescente ou decrescente), e mostra no fundo um resumo do armazém: total de paletes, paletes por peso (500 g e 1 kg), total de sacos e sacos por peso."),
         para("Liga a: Honetop, Dashboard.", { muted: true }),
 
         h2("Suporte"),

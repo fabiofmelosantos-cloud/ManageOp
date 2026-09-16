@@ -226,6 +226,8 @@ export const pageGuides: Record<string, PageGuide> = {
       "Consulte as paletes de produto acabado registadas.",
       "As paletes chegam aqui quando fecha a produção na linha Honetop.",
       "Cada linha tem botões para editar (produto, palete, quantidade, lote, validade, data de produção e destino) e eliminar. A edição fica disponível enquanto a palete não estiver expedida.",
+      "Use a pesquisa e o seletor 'Ordenar por' (ordem de entrada, lote ou quantidade) com o botão de ordem crescente/decrescente para organizar as paletes.",
+      "No fundo da página encontra o resumo do armazém: total de paletes, paletes por peso (500 g e 1 kg), total de sacos e sacos por peso.",
     ],
     connections: [
       { label: "Honetop", href: "/production/honetop", note: "Onde as paletes são registadas" },

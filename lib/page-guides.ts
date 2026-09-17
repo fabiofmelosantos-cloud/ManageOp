@@ -102,7 +102,7 @@ export const pageGuides: Record<string, PageGuide> = {
       "Verifique o stock disponível antes de requisitar materiais na produção.",
       "Quando uma requisição aprovada passa para \"Em produção\", a quantidade requisitada é consumida imediatamente do stock. Só volta ao stock após uma devolução aprovada.",
       "Na lista \"Stock atual\", as ações estão representadas por ícones de editar, transferir e eliminar. Se existirem entradas duplicadas do mesmo código interno e unidade, selecione-as e use o botão de merge no final da página: as quantidades são somadas e os vários lotes e validades ficam preservados.",
-      "Ao aprovar uma requisição, a quantidade é deduzida do stock. Ao transferi-la para produção, o botão deve ser usado na requisição aprovada; uma devolução aprovada repõe a quantidade no stock.",
+      "Ao criar uma transferência/requisição, a quantidade fica reservada mas não é deduzida. Após aprovação, o sistema procura a MP ou ME correspondente (mesmo material, incluindo vários lotes) e deduz a quantidade aprovada do Stock atual. Uma devolução aprovada repõe a quantidade.",
       "No quadro \"Stock atual\", use o botão \"Eliminar\" no cartão do material para o remover do stock.",
       "No separador \"Produto acabado\", as paletes aparecem em linhas: use a barra de pesquisa (produto, palete ou lote) e o filtro (Tudo, data de produção, lote ou data de registo) para as encontrar.",
       "Clique no lápis de uma palete para editar os seus dados (produto, palete, quantidade, lote, validade, data de produção e destino HQ/B2B) e guarde.",

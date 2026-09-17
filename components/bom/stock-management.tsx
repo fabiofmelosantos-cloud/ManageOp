@@ -101,19 +101,13 @@ export function StockManagement() {
       const item = items.find((entry) => entry.id === transfer.id)
       if (!item || item.quantity < quantity) { toast.error("Stock insuficiente."); return }
       const now = new Date().toISOString()
-      const request: MaterialRequest = { id: `request_${Date.now()}`, stockItemId: item.id, materialName: item.name, quantity, unit: item.unit, requester: "Utilizador autorizado", status: transfer.destination === "production" ? "transferred" : "approved", requestedAt: now, approvedAt: now, ...(transfer.destination === "production" ? { transferredAt: now, intermediateQuantity: quantity } : {}) }
-      await updateItems(items.map((entry) => entry.id === item.id ? { ...entry, quantity: entry.quantity - quantity } : entry)); await updateRequests([...requests, request])
+      const request: MaterialRequest = { id: `request_${Date.now()}`, stockItemId: item.id, materialName: item.name, quantity, unit: item.unit, requester: "Utilizador autorizado", status: "requested", requestedAt: now }
+      await updateRequests([...requests, request])
     } else {
       const request = requests.find((entry) => entry.id === transfer.id)
       if (!request || !["approved", "transferred"].includes(request.status) || quantity > (request.intermediateQuantity ?? request.quantity)) { toast.error("Quantidade indisponível para transferência."); return }
       const now = new Date().toISOString()
       const isEnteringProduction = transfer.destination === "production"
-      const stockItem = items.find((item) => item.id === request.stockItemId)
-      const shouldConsumeStock = false
-      if (shouldConsumeStock) {
-        if (!stockItem || stockItem.quantity < quantity) { toast.error("Stock insuficiente para satisfazer esta requisição."); return }
-        await updateItems(items.map((item) => item.id === request.stockItemId ? { ...item, quantity: item.quantity - quantity } : item))
-      }
       await updateRequests(requests.map((entry) => entry.id === request.id ? { ...entry, status: isEnteringProduction ? "in_production" : "returned_pending", transferredAt: isEnteringProduction ? (entry.transferredAt ?? now) : entry.transferredAt, returnedQuantity: transfer.destination === "warehouse" ? quantity : entry.returnedQuantity, returnedAt: transfer.destination === "warehouse" ? now : entry.returnedAt, intermediateQuantity: (entry.intermediateQuantity ?? entry.quantity) - quantity } : entry))
       if (transfer.destination === "warehouse") { toast.info("Devolução enviada para aprovação do armazém.") }
     }
@@ -204,9 +198,17 @@ export function StockManagement() {
     if (status === "transferred") { setTransfer({ id: request.id, source: "request", destination: "production", quantity: String(request.intermediateQuantity ?? request.quantity) }); return }
     const now = new Date().toISOString()
     if (status === "approved") {
-      const item = items.find((entry) => entry.id === request.stockItemId)
-      if (!item || item.quantity < request.quantity) { toast.error("Stock insuficiente para aprovar esta requisição."); return }
-      await updateItems(items.map((entry) => entry.id === request.stockItemId ? { ...entry, quantity: entry.quantity - request.quantity } : entry))
+      const candidates = items.filter((entry) => entry.id === request.stockItemId || entry.name.trim().toLowerCase() === request.materialName.trim().toLowerCase())
+      const totalAvailable = candidates.reduce((sum, entry) => sum + entry.quantity, 0)
+      if (totalAvailable < request.quantity) { toast.error("Stock insuficiente para aprovar esta requisição."); return }
+      let remaining = request.quantity
+      const nextItems = items.map((entry) => {
+        if (remaining <= 0 || !candidates.some((candidate) => candidate.id === entry.id)) return entry
+        const consumed = Math.min(entry.quantity, remaining)
+        remaining -= consumed
+        return { ...entry, quantity: entry.quantity - consumed }
+      })
+      await updateItems(nextItems)
     }
     await updateRequests(requests.map((entry) => entry.id === request.id ? { ...entry, status, ...(status === "approved" ? { approvedAt: now } : {}) } : entry)); toast.success(`Requisição ${statusLabels[status].toLowerCase()}.`)
   }

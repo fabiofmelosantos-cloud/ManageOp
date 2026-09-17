@@ -157,8 +157,10 @@ export const pageGuides: Record<string, PageGuide> = {
     steps: [
       "Selecione o dia a organizar e gere o horário — cada geração alterna as horas de almoço, ficando sempre diferente da anterior.",
       "Na primeira hora indique a sala e a tarefa no formato \"Sala / Tarefa\" (ex.: Honetop / Selar); nas horas seguintes repete-se apenas a sala.",
-      "Limpeza fica sempre às 17:00 e Saída às 18:00, mesmo ao propagar a sala.",
-      "Pode eliminar horários já gerados através do botão Eliminar em cada cartão do histórico.",
+    "Limpeza fica sempre às 17:00 e Saída às 18:00, mesmo ao propagar a sala.",
+    "O quadro começa com sete colaboradores, mas pode adicionar mais colaboradores e linhas. Abaixo de cada nome pode escolher Suporte, uma linha de produção ou um posto configurado na Gestão de Trabalhadores.",
+    "Os horários gerados ficam guardados no histórico e são recuperados automaticamente quando volta à página.",
+    "Pode eliminar horários já gerados através do botão Eliminar em cada cartão do histórico.",
       "O controlo de qualidade deixou de estar aqui: passou para as salas de produção (envelope) e para Gestão › Qualidade.",
     ],
     connections: [

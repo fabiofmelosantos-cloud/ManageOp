@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { ProductionLine, Worker } from "@/lib/types"
+import { EXTRA_POSITIONS, type ProductionLine, type Worker } from "@/lib/types"
 
 const defaultHours = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"]
 const defaultPositions = ["Honetop / Selar", "Honetop", "Honetop", "Honetop", "Honetop", "Honetop", "Honetop", "Honetop", "Limpeza", "Saída"]
@@ -41,8 +41,9 @@ export function ShiftOneBoard() {
   const [shift, setShift] = useState("turno1")
   const [hours, setHours] = useState(defaultHours)
   const [positions, setPositions] = useState(defaultPositions)
-  const [columns, setColumns] = useState<string[]>([])
+  const [columns, setColumns] = useState<string[]>(() => Array.from({ length: 7 }, (_, index) => `Colaborador ${index + 1}`))
   const [assignments, setAssignments] = useState<Record<string, string[]>>({})
+  const [workPositions, setWorkPositions] = useState<string[]>([])
   const [history, setHistory] = useState<ScheduleSnapshot[]>([])
   const [activeSnapshotId, setActiveSnapshotId] = useState<string | null>(null)
   const [lockedColumns, setLockedColumns] = useState<Set<string>>(new Set())
@@ -50,30 +51,39 @@ export function ShiftOneBoard() {
 
   useEffect(() => {
     let active = true
-    void fetch("/api/data?key=schedule_board_history").then((response) => response.json()).then((payload) => {
-      if (active && Array.isArray(payload.data)) setHistory(payload.data)
-    }).catch(() => {})
-    void import("@/lib/storage").then(async ({ loadWorkers, getWorkers, loadProductionLines }) => {
-      await loadWorkers()
-      const lines = await loadProductionLines()
-      if (active) {
-        const names = getWorkers().map((worker) => worker.name).filter(Boolean)
-        setWorkers(getWorkers())
-        setColumns(names)
-        setProductionLines(lines)
-      }
-    })
+    void (async () => {
+      const [{ loadWorkers, getWorkers, loadProductionLines, loadWorkPositions, getWorkPositions }, historyResponse] = await Promise.all([
+        import("@/lib/storage"),
+        fetch("/api/data?key=schedule_board_history"),
+      ])
+      const [loadedWorkers, lines, positionsFromSettings, historyPayload] = await Promise.all([
+        loadWorkers().then(() => getWorkers()),
+        loadProductionLines(),
+        loadWorkPositions().then(() => getWorkPositions()),
+        historyResponse.json(),
+      ])
+      if (!active) return
+      const storedHistory = Array.isArray(historyPayload.data) ? historyPayload.data as ScheduleSnapshot[] : []
+      setWorkers(loadedWorkers)
+      setProductionLines(lines)
+      setWorkPositions(positionsFromSettings.map((position) => position.name).filter(Boolean))
+      setHistory(storedHistory)
+      const latest = storedHistory[storedHistory.length - 1]
+      if (latest) loadSnapshot(latest)
+      else setColumns(loadedWorkers.map((worker) => worker.name).filter(Boolean).slice(0, 7).concat(Array.from({ length: Math.max(0, 7 - loadedWorkers.length) }, (_, index) => `Colaborador ${loadedWorkers.length + index + 1}`)))
+    })().catch(() => {})
     return () => { active = false }
   }, [])
 
   const workerNames = useMemo(() => workers.map((worker) => worker.name).filter(Boolean), [workers])
   const activeLines = useMemo(() => productionLines.filter((line) => line.isActive), [productionLines])
   const lineNames = useMemo(() => activeLines.map((line) => line.name), [activeLines])
+  const selectablePosts = useMemo(() => Array.from(new Set(["Suporte", ...lineNames, ...workPositions, ...EXTRA_POSITIONS.map((position) => position.name)])), [lineNames, workPositions])
   const lunchHours = ["12:00", "13:00", "14:00"]
 
   function selectValueForColumn(column: string) {
     const room = roomOf(assignments[column]?.[0] ?? positions[0] ?? "")
-    if (room === "Suporte" || lineNames.includes(room)) return room
+    if (selectablePosts.includes(room)) return room
     return ""
   }
 
@@ -302,8 +312,7 @@ export function ShiftOneBoard() {
                         <Select value={selectValueForColumn(column)} onValueChange={(value) => updateCell(column, 0, value)}>
                           <SelectTrigger className="h-7 flex-1 text-xs"><SelectValue placeholder="Suporte / Linha" /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Suporte">Suporte</SelectItem>
-                            {activeLines.map((line) => <SelectItem key={line.id} value={line.name}>{line.name}</SelectItem>)}
+                            {selectablePosts.map((post) => <SelectItem key={post} value={post}>{post}</SelectItem>)}
                           </SelectContent>
                         </Select>
                         <Button variant="ghost" size="icon" className="size-7 shrink-0" aria-label={lockedColumns.has(column) ? `Destrancar linha de ${column}` : `Trancar linha de ${column}`} onClick={() => toggleColumnLock(column)}>

@@ -198,9 +198,12 @@ export function StockManagement() {
     if (status === "transferred") { setTransfer({ id: request.id, source: "request", destination: "production", quantity: String(request.intermediateQuantity ?? request.quantity) }); return }
     const now = new Date().toISOString()
     if (status === "approved") {
-      const candidates = items.filter((entry) => entry.id === request.stockItemId || entry.name.trim().toLowerCase() === request.materialName.trim().toLowerCase())
+      const requestedCode = request.stockItemId.trim().toLowerCase()
+      const requestedName = request.materialName.trim().toLowerCase()
+      const candidates = items.filter((entry) => entry.id === request.stockItemId || entry.internalCode.trim().toLowerCase() === requestedCode || entry.name.trim().toLowerCase() === requestedName)
       const totalAvailable = candidates.reduce((sum, entry) => sum + entry.quantity, 0)
-      if (totalAvailable < request.quantity) { toast.error("Stock insuficiente para aprovar esta requisição."); return }
+      if (!candidates.length) { toast.error(`Nenhum material "${request.materialName}" encontrado no stock atual. Adicione-o ou corrija o nome antes de aprovar.`); return }
+      if (totalAvailable < request.quantity) { toast.error(`Stock insuficiente para aprovar: disponível ${totalAvailable} ${request.unit}, requisitado ${request.quantity} ${request.unit}.`); return }
       let remaining = request.quantity
       const nextItems = items.map((entry) => {
         if (remaining <= 0 || !candidates.some((candidate) => candidate.id === entry.id)) return entry

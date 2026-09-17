@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Plus, Trash2, WandSparkles, UsersRound, Lock, LockOpen } from "lucide-react"
+import { Plus, Trash2, WandSparkles, UsersRound, Lock, LockOpen, ChevronDown, ChevronUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -34,6 +34,39 @@ function roomOf(value: string) {
   return (value ?? "").split("/")[0].trim()
 }
 
+function SnapshotTable({ snapshot }: { snapshot: ScheduleSnapshot }) {
+  return (
+    <div className="overflow-x-auto rounded-md border">
+      <table className="min-w-[900px] w-full border-collapse text-sm">
+        <caption className="sr-only">Horário de {dateLabel(snapshot.date)}</caption>
+        <thead>
+          <tr className="bg-muted/40">
+            <th className="border px-2 py-2">Horas</th>
+            {snapshot.columns.map((column, index) => (
+              <th key={`snap-col-${snapshot.id}-${index}`} className="min-w-32 border px-2 py-2 text-center font-semibold">{column}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {snapshot.hours.map((hour, rowIndex) => (
+            <tr key={`snap-row-${snapshot.id}-${rowIndex}`} className={rowIndex % 2 ? "bg-background" : "bg-muted/20"}>
+              <th className="border p-2 text-xs font-medium">{hour}</th>
+              {snapshot.columns.map((column, columnIndex) => {
+                const value = snapshot.assignments[column]?.[rowIndex] ?? ""
+                return (
+                  <td key={`snap-cell-${snapshot.id}-${columnIndex}-${rowIndex}`} className={value.startsWith("Almoço") ? "border p-1 text-center text-xs font-bold text-primary" : "border p-1 text-center text-xs"}>
+                    {value}
+                  </td>
+                )
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 export function ShiftOneBoard() {
   const [workers, setWorkers] = useState<Worker[]>([])
   const [productionLines, setProductionLines] = useState<ProductionLine[]>([])
@@ -48,6 +81,7 @@ export function ShiftOneBoard() {
   const [activeSnapshotId, setActiveSnapshotId] = useState<string | null>(null)
   const [lockedColumns, setLockedColumns] = useState<Set<string>>(new Set())
   const [lockedCells, setLockedCells] = useState<Set<string>>(new Set())
+  const [collapsedSnapshots, setCollapsedSnapshots] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     let active = true
@@ -241,6 +275,15 @@ export function ShiftOneBoard() {
     })
   }
 
+  function toggleSnapshotCollapse(id: string) {
+    setCollapsedSnapshots((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
   function toggleCellLock(column: string, rowIndex: number) {
     const key = `${column}::${rowIndex}`
     setLockedCells((current) => {
@@ -372,8 +415,27 @@ export function ShiftOneBoard() {
         </div>
         {!columns.length && <p className="p-6 text-center text-sm text-muted-foreground">Adicione trabalhadores ou um colaborador manualmente para começar.</p>}
         {history.length > 0 && <section className="space-y-3 border-t pt-4" aria-labelledby="schedule-history-title">
-          <div><h2 id="schedule-history-title" className="text-lg font-semibold">Horários anteriores</h2><p className="text-sm text-muted-foreground">Consulte horários já gerados sem substituir o quadro atual.</p></div>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{history.slice().reverse().map((snapshot) => <Card key={snapshot.id} className={snapshot.id === activeSnapshotId ? "border-primary" : ""}><CardHeader className="p-4"><CardTitle className="text-base">{dateLabel(snapshot.date)}</CardTitle><CardDescription>{snapshot.shift === "turno1" ? "Turno 1 · 09:00–18:00" : snapshot.shift} · {snapshot.columns.length} colaboradores</CardDescription></CardHeader><CardContent className="flex items-center gap-2 p-4 pt-0"><Button variant={snapshot.id === activeSnapshotId ? "secondary" : "outline"} size="sm" onClick={() => loadSnapshot(snapshot)}>Consultar horário</Button><Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => void deleteSnapshot(snapshot.id)}><Trash2 data-icon="inline-start" />Eliminar</Button></CardContent></Card>)}</div>
+          <div><h2 id="schedule-history-title" className="text-lg font-semibold">Quadros gerados</h2><p className="text-sm text-muted-foreground">Cada quadro gerado fica visível abaixo do quadro do dia. Use "Minimizar" para o recolher sem o perder.</p></div>
+          <div className="flex flex-col gap-4">
+            {history.slice().reverse().map((snapshot) => {
+              const collapsed = collapsedSnapshots.has(snapshot.id)
+              return (
+                <Card key={snapshot.id} className={snapshot.id === activeSnapshotId ? "border-primary" : ""}>
+                  <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 p-4">
+                    <div><CardTitle className="text-base">{dateLabel(snapshot.date)}</CardTitle><CardDescription>{snapshot.shift === "turno1" ? "Turno 1 · 09:00–18:00" : snapshot.shift} · {snapshot.columns.length} colaboradores</CardDescription></div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => toggleSnapshotCollapse(snapshot.id)}>
+                        {collapsed ? <ChevronDown data-icon="inline-start" /> : <ChevronUp data-icon="inline-start" />}
+                        {collapsed ? "Maximizar" : "Minimizar"}
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => void deleteSnapshot(snapshot.id)}><Trash2 data-icon="inline-start" />Eliminar</Button>
+                    </div>
+                  </CardHeader>
+                  {!collapsed && <CardContent className="p-4 pt-0"><SnapshotTable snapshot={snapshot} /></CardContent>}
+                </Card>
+              )
+            })}
+          </div>
         </section>}
       </CardContent>
     </Card>

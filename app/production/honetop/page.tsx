@@ -121,18 +121,37 @@ export default function HonetopProductionPage() {
   }
 
   async function requestMaterials() {
-    if (unitsToProduce <= 0 || rawPerUnit <= 0) { setMessage("Selecione um produto com receita e indique a quantidade a produzir."); return }
+    if (unitsToProduce <= 0 || recipeMaterials.length === 0) { setMessage("Selecione um produto com receita e indique a quantidade a produzir."); return }
     setRequesting(true)
     try {
       const current = await loadMaterialRequests()
       const now = new Date().toISOString()
-      const requests: MaterialRequest[] = [
-        { id: `request_honetop_me_bags_${Date.now()}`, stockItemId: "honetop-me-bags", materialName: `Sacos ME · ${form.productName || "Honetop"}`, quantity: requiredMeBags || unitsToProduce, unit: "un", requester: "Produção Honetop", destinationRoom: "Honetop", status: "requested", requestedAt: now, productionDate: form.requestProductionDate || form.productionDate || new Date().toISOString().slice(0, 10), productionLot: form.productionLot, productionExpiry: form.productionExpiry },
-        { id: `request_honetop_me_scoops_${Date.now() + 1}`, stockItemId: "honetop-me-scoops", materialName: `Scoops ME · ${form.productName || "Honetop"}`, quantity: requiredMeScoops || unitsToProduce, unit: "un", requester: "Produção Honetop", destinationRoom: "Honetop", status: "requested", requestedAt: now, productionDate: form.requestProductionDate || form.productionDate || new Date().toISOString().slice(0, 10), productionLot: form.productionLot, productionExpiry: form.productionExpiry },
-        { id: `request_honetop_raw_${Date.now() + 2}`, stockItemId: "honetop-raw-material", materialName: `Matéria-prima · ${form.productName || "Honetop"}`, quantity: requiredRawKg, unit: "kg", requester: "Produção Honetop", destinationRoom: "Honetop", status: "requested", requestedAt: now, productionDate: form.requestProductionDate || form.productionDate || new Date().toISOString().slice(0, 10), productionLot: form.productionLot, productionExpiry: form.productionExpiry },
-      ]
+      const productionDate = form.requestProductionDate || form.productionDate || new Date().toISOString().slice(0, 10)
+      const firstMpCode = recipeMp[0]?.code
+      // Usar o nome/código exatos do material da receita para que a aprovação no armazém encontre o stock correspondente.
+      const requests: MaterialRequest[] = recipeMaterials
+        .map((material, index) => {
+          const rawQuantity = material.quantityPerUnit * unitsToProduce
+          const quantity = material.type === "MP" && material.code === firstMpCode ? Math.max(rawQuantity - mpSurplus, 0) : rawQuantity
+          return {
+            id: `request_honetop_${material.type.toLowerCase()}_${material.code || index}_${Date.now() + index}`,
+            stockItemId: material.code || `honetop-${material.type.toLowerCase()}-${index}`,
+            materialName: material.name,
+            quantity,
+            unit: material.unit,
+            requester: "Produção Honetop",
+            destinationRoom: "Honetop",
+            status: "requested" as const,
+            requestedAt: now,
+            productionDate,
+            productionLot: form.productionLot,
+            productionExpiry: form.productionExpiry,
+          }
+        })
+        .filter((request) => request.quantity > 0)
+      if (!requests.length) { setMessage("Não há materiais com quantidade a requisitar."); return }
       await saveMaterialRequests([...current, ...requests])
-      setMessage("Requisição enviada ao armazém: sacos ME, scoops ME e matéria-prima.")
+      setMessage(`Requisição enviada ao armazém: ${requests.map((request) => request.materialName).join(", ")}.`)
     } finally { setRequesting(false) }
   }
 

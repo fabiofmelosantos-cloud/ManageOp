@@ -100,6 +100,7 @@ export const pageGuides: Record<string, PageGuide> = {
     steps: [
       "Consulte os materiais e quantidades associados a cada produto.",
       "Verifique o stock disponível antes de requisitar materiais na produção.",
+      "Quando uma requisição aprovada passa para \"Em produção\", a quantidade requisitada é consumida imediatamente do stock. Só volta ao stock após uma devolução aprovada.",
       "No quadro \"Stock atual\", use o botão \"Eliminar\" no cartão do material para o remover do stock.",
       "No separador \"Produto acabado\", as paletes aparecem em linhas: use a barra de pesquisa (produto, palete ou lote) e o filtro (Tudo, data de produção, lote ou data de registo) para as encontrar.",
       "Clique no lápis de uma palete para editar os seus dados (produto, palete, quantidade, lote, validade, data de produção e destino HQ/B2B) e guarde.",
@@ -156,8 +157,10 @@ export const pageGuides: Record<string, PageGuide> = {
     steps: [
       "Selecione o dia a organizar e gere o horário — cada geração alterna as horas de almoço, ficando sempre diferente da anterior.",
       "Na primeira hora indique a sala e a tarefa no formato \"Sala / Tarefa\" (ex.: Honetop / Selar); nas horas seguintes repete-se apenas a sala.",
-      "Limpeza fica sempre às 17:00 e Saída às 18:00, mesmo ao propagar a sala.",
-      "Pode eliminar horários já gerados através do botão Eliminar em cada cartão do histórico.",
+    "Limpeza fica sempre às 17:00 e Saída às 18:00, mesmo ao propagar a sala.",
+    "O quadro começa com sete colaboradores, mas pode adicionar mais colaboradores e linhas. Abaixo de cada nome pode escolher Suporte, uma linha de produção ou um posto configurado na Gestão de Trabalhadores.",
+    "Os horários gerados ficam guardados no histórico e são recuperados automaticamente quando volta à página.",
+    "Pode eliminar horários já gerados através do botão Eliminar em cada cartão do histórico.",
       "O controlo de qualidade deixou de estar aqui: passou para as salas de produção (envelope) e para Gestão › Qualidade.",
     ],
     connections: [

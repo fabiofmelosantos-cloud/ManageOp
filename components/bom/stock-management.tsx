@@ -104,7 +104,17 @@ export function StockManagement() {
       const request = requests.find((entry) => entry.id === transfer.id)
       if (!request || !["approved", "transferred"].includes(request.status) || quantity > (request.intermediateQuantity ?? request.quantity)) { toast.error("Quantidade indisponível para transferência."); return }
       const now = new Date().toISOString()
-      await updateRequests(requests.map((entry) => entry.id === request.id ? { ...entry, status: transfer.destination === "production" ? "in_production" : "returned_pending", transferredAt: transfer.destination === "production" ? (entry.transferredAt ?? now) : entry.transferredAt, returnedQuantity: transfer.destination === "warehouse" ? quantity : entry.returnedQuantity, returnedAt: transfer.destination === "warehouse" ? now : entry.returnedAt, intermediateQuantity: (entry.intermediateQuantity ?? entry.quantity) - quantity } : entry))
+      const isEnteringProduction = transfer.destination === "production"
+      const stockItem = items.find((item) => item.id === request.stockItemId)
+      const shouldConsumeStock = isEnteringProduction && request.status === "approved"
+      if (shouldConsumeStock) {
+        if (!stockItem || stockItem.quantity < quantity) {
+          toast.error("Stock insuficiente para satisfazer esta requisição.")
+          return
+        }
+        await updateItems(items.map((item) => item.id === request.stockItemId ? { ...item, quantity: item.quantity - quantity } : item))
+      }
+      await updateRequests(requests.map((entry) => entry.id === request.id ? { ...entry, status: isEnteringProduction ? "in_production" : "returned_pending", transferredAt: isEnteringProduction ? (entry.transferredAt ?? now) : entry.transferredAt, returnedQuantity: transfer.destination === "warehouse" ? quantity : entry.returnedQuantity, returnedAt: transfer.destination === "warehouse" ? now : entry.returnedAt, intermediateQuantity: (entry.intermediateQuantity ?? entry.quantity) - quantity } : entry))
       if (transfer.destination === "warehouse") { toast.info("Devolução enviada para aprovação do armazém.") }
     }
     setTransfer(null); toast.success("Transferência registada e stock atualizado.")

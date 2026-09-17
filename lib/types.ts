@@ -51,6 +51,7 @@ export interface StockItem {
   lot: string
   expiryDate: string
   createdAt: string
+  lots?: Array<{ quantity: number; lot: string; expiryDate: string }>
 }
 
 export interface FinishedProduct {

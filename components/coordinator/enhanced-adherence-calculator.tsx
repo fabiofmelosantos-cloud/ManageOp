@@ -310,7 +310,7 @@ export function EnhancedAdherenceCalculator({
         <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <Gauge className="h-5 w-5 text-blue-600" />
-            Calculadora de Aderencia
+            Calculadora de Aderência
           </CardTitle>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-xs">
@@ -328,7 +328,7 @@ export function EnhancedAdherenceCalculator({
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-lg">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
-              <p className="text-sm opacity-90">Aderencia Global</p>
+              <p className="text-sm opacity-90">Aderência Global</p>
               <p className="text-3xl font-bold">{overallAdherence.toFixed(1)}%</p>
             </div>
             <div className="text-right">
@@ -341,7 +341,7 @@ export function EnhancedAdherenceCalculator({
               ) : overallAdherence >= 60 ? (
                 <div className="flex items-center gap-1 text-yellow-200">
                   <AlertTriangle className="h-5 w-5" />
-                  <span className="font-semibold">Atencao</span>
+                  <span className="font-semibold">Atenção</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1 text-red-200">
@@ -412,7 +412,7 @@ export function EnhancedAdherenceCalculator({
                         <p className="font-semibold">{entry.remainingKg} kg</p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground">Aderencia</p>
+                        <p className="text-muted-foreground">Aderência</p>
                         <p className="font-semibold">
                           {entry.targetKg > 0 ? ((entry.producedKg / entry.targetKg) * 100).toFixed(1) : 0}%
                         </p>

@@ -37,7 +37,7 @@ const STATUS_CONFIG: Record<
   { label: string; icon: React.ComponentType<{ className?: string }>; color: string; bgColor: string }
 > = {
   running: {
-    label: "Em Producao",
+    label: "Em Produção",
     icon: Play,
     color: "text-green-600 dark:text-green-400",
     bgColor: "bg-green-100 dark:bg-green-900/50 border-green-500",
@@ -61,7 +61,7 @@ const STATUS_CONFIG: Record<
     bgColor: "bg-orange-100 dark:bg-orange-900/50 border-orange-500",
   },
   maintenance: {
-    label: "Manutencao",
+    label: "Manutenção",
     icon: Wrench,
     color: "text-purple-600 dark:text-purple-400",
     bgColor: "bg-purple-100 dark:bg-purple-900/50 border-purple-500",
@@ -200,7 +200,7 @@ export function LinesDashboard({
               </div>
               <div>
                 <p className="text-2xl font-bold">{workforceSummary.totalProductionHours}h</p>
-                <p className="text-xs opacity-90">Horas Producao</p>
+                <p className="text-xs opacity-90">Horas Produção</p>
               </div>
               <div>
                 <p className="text-2xl font-bold">{workforceSummary.totalQualityWallHours}h</p>
@@ -213,7 +213,7 @@ export function LinesDashboard({
         {/* Progress Bar */}
         <div className="space-y-1">
           <div className="flex justify-between text-xs">
-            <span>Taxa de Operacao</span>
+            <span>Taxa de Operação</span>
             <span className="font-semibold">{runningPercentage.toFixed(0)}%</span>
           </div>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden flex">
@@ -303,7 +303,7 @@ export function LinesDashboard({
                         </div>
                         <div className="text-xs space-y-0.5">
                           <div className="flex justify-between">
-                            <span>Producao ({productionPeople}p):</span>
+                            <span>Produção ({productionPeople}p):</span>
                             <span className="font-semibold">{productionHoursTotal}h</span>
                           </div>
                           {ls.qualityWallPeople > 0 && (
@@ -344,7 +344,7 @@ export function LinesDashboard({
                     <div className="space-y-2">
                       <Label className="flex items-center gap-2">
                         <Package className="h-4 w-4" />
-                        Produto em Producao
+                        Produto em Produção
                       </Label>
                       {products.length > 0 ? (
                         <Select
@@ -376,7 +376,7 @@ export function LinesDashboard({
                     <div className="p-4 bg-muted/50 rounded-lg space-y-4">
                       <Label className="flex items-center gap-2 font-semibold">
                         <Users className="h-4 w-4" />
-                        Configuracao de Pessoas
+                        Configuração de Pessoas
                       </Label>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
@@ -418,7 +418,7 @@ export function LinesDashboard({
                           <p className="font-semibold mb-2">Calculo de Horas:</p>
                           <div className="space-y-1">
                             <div className="flex justify-between">
-                              <span>Producao: {ls.totalPeople - ls.qualityWallPeople} x {ls.productionHours}h =</span>
+                              <span>Produção: {ls.totalPeople - ls.qualityWallPeople} x {ls.productionHours}h =</span>
                               <span className="font-bold">{(ls.totalPeople - ls.qualityWallPeople) * ls.productionHours}h</span>
                             </div>
                             {ls.qualityWallPeople > 0 && (
@@ -466,7 +466,7 @@ export function LinesDashboard({
                     {/* Hours */}
                     <div className="grid grid-cols-3 gap-3">
                       <div className="space-y-1.5">
-                        <Label className="text-xs">Horas Producao</Label>
+                        <Label className="text-xs">Horas Produção</Label>
                         <Input
                           type="number"
                           min={0}
@@ -561,7 +561,7 @@ export function LinesDashboard({
             className="min-h-[40px] text-green-600 border-green-300 hover:bg-green-50"
           >
             <Play className="h-4 w-4 mr-1" />
-            Todas em Producao
+            Todas em Produção
           </Button>
           <Button
             variant="outline"

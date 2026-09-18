@@ -181,7 +181,7 @@ export function WorkforceDistributionPanel({
         <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <Users className="h-5 w-5 text-purple-600" />
-            Distribuicao de Horas Homem (MOD)
+            Distribuição de Horas Homem (MOD)
           </CardTitle>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="font-mono">

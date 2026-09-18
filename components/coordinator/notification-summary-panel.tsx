@@ -99,7 +99,7 @@ export function NotificationSummaryPanel({
     // Add line production hours (assume code 01 for regular production)
     lines.forEach((l) => {
       if (l.productionTotalHours > 0) {
-        if (!byCode["PROD"]) byCode["PROD"] = { code: "PROD", name: "Producao Linhas", hours: 0, people: 0 }
+        if (!byCode["PROD"]) byCode["PROD"] = { code: "PROD", name: "Produção Linhas", hours: 0, people: 0 }
         byCode["PROD"].hours += l.productionTotalHours
         byCode["PROD"].people += l.productionPeople
       }
@@ -164,7 +164,7 @@ export function NotificationSummaryPanel({
 
     summary.lines.forEach((l) => {
       lines.push(`${l.lineName}: ${l.productName || "N/A"}`)
-      lines.push(`  ${l.productionPeople}p x ${l.productionHours}h = ${l.productionTotalHours}h (Producao)`)
+      lines.push(`  ${l.productionPeople}p x ${l.productionHours}h = ${l.productionTotalHours}h (Produção)`)
       if (l.qualityWallPeople > 0) {
         lines.push(`  ${l.qualityWallPeople}p x ${l.productionHours}h = ${l.qualityWallTotalHours}h (Muro 041)`)
       }
@@ -207,7 +207,7 @@ export function NotificationSummaryPanel({
     rows.push([])
 
     rows.push(["DETALHES POR LINHA"])
-    rows.push(["Linha", "Produto", "Pessoas Prod", "Pessoas Muro (041)", "Total Pessoas", "Horas Prod", "Horas Producao Total", "Horas Muro Total", "Total Horas"])
+    rows.push(["Linha", "Produto", "Pessoas Prod", "Pessoas Muro (041)", "Total Pessoas", "Horas Prod", "Horas Produção Total", "Horas Muro Total", "Total Horas"])
 
     summary.lines.forEach((l) => {
       rows.push([
@@ -256,7 +256,7 @@ export function NotificationSummaryPanel({
         <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <ClipboardList className="h-5 w-5 text-emerald-600" />
-            Resumo de Notificacao
+            Resumo de Notificação
           </CardTitle>
           <Badge variant="outline" className="font-mono">
             {summary.grandTotal.totalPeople} pessoas | {summary.grandTotal.totalHours}h
@@ -332,7 +332,7 @@ export function NotificationSummaryPanel({
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="flex justify-between p-2 bg-muted/50 rounded">
-                      <span>Producao ({line.productionPeople}p x {line.productionHours}h):</span>
+                      <span>Produção ({line.productionPeople}p x {line.productionHours}h):</span>
                       <span className="font-bold">{line.productionTotalHours}h</span>
                     </div>
                     {line.qualityWallPeople > 0 && (

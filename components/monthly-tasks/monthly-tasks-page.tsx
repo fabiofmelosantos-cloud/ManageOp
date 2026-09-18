@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, Lock, Trash2, Unlock, WandSparkles } from "lucide-react"
+import { ArrowLeft, ChevronDown, ChevronUp, Lock, Trash2, Unlock, WandSparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -53,6 +53,7 @@ export function MonthlyTasksPage() {
   const [plan, setPlan] = useState<MonthlyPlan | null>(null)
   const [saving, setSaving] = useState(false)
   const [savingCell, setSavingCell] = useState<string | null>(null)
+  const [consultCollapsed, setConsultCollapsed] = useState(false)
   const days = useMemo(() => monthDays(month), [month])
 
   useEffect(() => { void Promise.all([
@@ -217,6 +218,38 @@ export function MonthlyTasksPage() {
               </table>
             </div>
           </CardContent>
+        </Card>
+
+        <Card className="overflow-hidden">
+          <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 border-b bg-muted/20">
+            <div>
+              <CardTitle>Quadro gerado para consulta · {monthLabel}</CardTitle>
+              <CardDescription>
+                Vista apenas de leitura da escala gerada, para consulta e histórico. No futuro, apenas o administrador terá acesso ao quadro de edição acima; os restantes utilizadores consultam aqui.
+              </CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setConsultCollapsed((current) => !current)}>
+              {consultCollapsed ? <ChevronDown data-icon="inline-start" /> : <ChevronUp data-icon="inline-start" />}
+              {consultCollapsed ? "Maximizar" : "Minimizar"}
+            </Button>
+          </CardHeader>
+          {!consultCollapsed && (
+            <CardContent className="space-y-3 p-3">
+              <div className="overflow-auto rounded-md border">
+                <table className="min-w-[1500px] border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-muted/60">
+                      <th className="sticky left-0 z-10 min-w-[330px] border p-2 text-left">Tarefas</th>
+                      {days.map((day) => <th key={day.toISOString()} className={`min-w-[86px] border p-2 text-center ${day.getDay() === 0 || day.getDay() === 6 ? "text-muted-foreground" : ""}`}><div>{new Intl.DateTimeFormat("pt-PT", { weekday: "short" }).format(day).replace(".", "")}</div><div>{day.getDate()}</div></th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tasks.map((task) => <tr key={task.id} className="even:bg-muted/20"><td className="sticky left-0 z-10 border bg-card p-3"><p className="font-medium">{task.description}</p><p className="mt-1 text-[11px] text-muted-foreground">{task.frequency === "daily" ? "Diária" : "2x por semana"}</p></td>{days.map((day) => { const date = localDateKey(day); const weekend = day.getDay() === 0 || day.getDay() === 6; const name = activePlan.assignments?.[task.id]?.[date] ?? ""; return <td key={date} className={`border p-1 text-center align-middle ${weekend ? "bg-muted/30" : ""}`}>{name}</td> })}</tr>)}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          )}
         </Card>
       </div>
     </main>

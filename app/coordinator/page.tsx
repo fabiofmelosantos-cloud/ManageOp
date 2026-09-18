@@ -186,7 +186,7 @@ export default function CoordinatorPage() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                   <Settings2 className="h-5 w-5" />
-                  Configuracao do Turno
+                  Configuração do Turno
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <Badge className="text-xs">
@@ -242,7 +242,7 @@ export default function CoordinatorPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-6 h-auto p-1 bg-muted/80">
           <TabsTrigger value="adherence" className="text-xs sm:text-sm py-2.5 px-1 sm:px-3 data-[state=active]:bg-background">
-            <span className="hidden sm:inline">Aderencia</span>
+            <span className="hidden sm:inline">Aderência</span>
             <span className="sm:hidden">Ader.</span>
           </TabsTrigger>
           <TabsTrigger value="lines" className="text-xs sm:text-sm py-2.5 px-1 sm:px-3 data-[state=active]:bg-background">
@@ -261,7 +261,7 @@ export default function CoordinatorPage() {
             MOD
           </TabsTrigger>
           <TabsTrigger value="report" className="text-xs sm:text-sm py-2.5 px-1 sm:px-3 data-[state=active]:bg-background">
-            <span className="hidden sm:inline">Relatorio</span>
+            <span className="hidden sm:inline">Relatório</span>
             <span className="sm:hidden">Rel.</span>
           </TabsTrigger>
         </TabsList>
@@ -340,12 +340,12 @@ export default function CoordinatorPage() {
       <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-2 sm:hidden z-50">
         <div className="flex justify-around">
           {[
-            { id: "adherence", label: "Aderencia", short: "Ader." },
+            { id: "adherence", label: "Aderência", short: "Ader." },
             { id: "lines", label: "Linhas", short: "Lin." },
             { id: "notify", label: "Notificar", short: "Not." },
             { id: "summary", label: "Resumo", short: "Res." },
             { id: "mod", label: "MOD", short: "MOD" },
-            { id: "report", label: "Relatorio", short: "Rel." },
+            { id: "report", label: "Relatório", short: "Rel." },
           ].map((tab) => (
             <Button
               key={tab.id}

@@ -341,7 +341,7 @@ export function OperationalSummaryForm({ date, shift, formData, onFormDataChange
                 {getSectionStatus("safety") && (
                   <Badge variant="destructive" className="ml-auto mr-2">
                     <AlertTriangle className="h-3 w-3 mr-1" />
-                    Atencao
+                    Atenção
                   </Badge>
                 )}
               </div>
@@ -422,7 +422,7 @@ export function OperationalSummaryForm({ date, shift, formData, onFormDataChange
                 {getSectionStatus("cost") && (
                   <Badge variant="destructive" className="ml-auto mr-2">
                     <AlertTriangle className="h-3 w-3 mr-1" />
-                    Atencao
+                    Atenção
                   </Badge>
                 )}
               </div>
@@ -446,7 +446,7 @@ export function OperationalSummaryForm({ date, shift, formData, onFormDataChange
                       />
                       <Input
                         type="number"
-                        placeholder="Duracao (min)"
+                        placeholder="Duração (min)"
                         value={stoppage.duration || ""}
                         onChange={(e) => updateStoppage(stoppage.id, { duration: Number(e.target.value) })}
                         className="min-h-[44px]"
@@ -533,7 +533,7 @@ export function OperationalSummaryForm({ date, shift, formData, onFormDataChange
                 {getSectionStatus("workforce") && (
                   <Badge variant="destructive" className="ml-auto mr-2">
                     <AlertTriangle className="h-3 w-3 mr-1" />
-                    Atencao
+                    Atenção
                   </Badge>
                 )}
               </div>

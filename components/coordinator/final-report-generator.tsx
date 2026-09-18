@@ -89,7 +89,7 @@ export function FinalReportGenerator({
     lines.push(separator)
     lines.push("ADERENCIA")
     lines.push(separator)
-    lines.push(`Aderencia Global: ${adherenceData.overallAdherence.toFixed(1)}%`)
+    lines.push(`Aderência Global: ${adherenceData.overallAdherence.toFixed(1)}%`)
     lines.push("")
     if (adherenceData.entries.length > 0) {
       lines.push("Por Linha:")
@@ -111,11 +111,11 @@ export function FinalReportGenerator({
       incident: lineStatuses.filter((l) => l.status === "incident").length,
       maintenance: lineStatuses.filter((l) => l.status === "maintenance").length,
     }
-    lines.push(`Em Producao: ${statusCounts.running}`)
+    lines.push(`Em Produção: ${statusCounts.running}`)
     lines.push(`Paradas: ${statusCounts.stopped}`)
     lines.push(`Em Limpeza: ${statusCounts.cleaning}`)
     lines.push(`Com Incidencia: ${statusCounts.incident}`)
-    lines.push(`Em Manutencao: ${statusCounts.maintenance}`)
+    lines.push(`Em Manutenção: ${statusCounts.maintenance}`)
     lines.push("")
 
     // Safety & Quality
@@ -236,12 +236,12 @@ export function FinalReportGenerator({
     rows.push(["====================================="])
     rows.push(["ESTATISTICAS DE PRODUCAO"])
     rows.push(["====================================="])
-    rows.push(["Aderencia Global", `${adherenceData.overallAdherence.toFixed(1)}%`])
+    rows.push(["Aderência Global", `${adherenceData.overallAdherence.toFixed(1)}%`])
     rows.push([])
     
     if (adherenceData.entries.length > 0) {
       rows.push(["DETALHE POR LINHA"])
-      rows.push(["Linha", "Produto", "Produzido (kg)", "Objetivo (kg)", "Restante (kg)", "Aderencia (%)", "Estado", "Hora Estimada Fim"])
+      rows.push(["Linha", "Produto", "Produzido (kg)", "Objetivo (kg)", "Restante (kg)", "Aderência (%)", "Estado", "Hora Estimada Fim"])
       adherenceData.entries.forEach((e) => {
         const percentage = e.targetKg > 0 ? ((e.producedKg / e.targetKg) * 100).toFixed(1) : "0"
         rows.push([
@@ -280,18 +280,18 @@ export function FinalReportGenerator({
       maintenance: lineStatuses.filter((l) => l.status === "maintenance").length,
     }
     rows.push(["Resumo Estado"])
-    rows.push(["Em Producao", statusCounts.running.toString()])
+    rows.push(["Em Produção", statusCounts.running.toString()])
     rows.push(["Paradas", statusCounts.stopped.toString()])
     rows.push(["Em Limpeza", statusCounts.cleaning.toString()])
     rows.push(["Com Incidencia", statusCounts.incident.toString()])
-    rows.push(["Em Manutencao", statusCounts.maintenance.toString()])
+    rows.push(["Em Manutenção", statusCounts.maintenance.toString()])
     rows.push([])
     rows.push(["DETALHE POR LINHA"])
-    rows.push(["Linha", "Estado", "Horas Producao", "Horas Limpeza", "Horas Parado", "Motivo Paragem", "Incidencia"])
+    rows.push(["Linha", "Estado", "Horas Produção", "Horas Limpeza", "Horas Parado", "Motivo Paragem", "Incidencia"])
     lineStatuses.forEach((ls) => {
       rows.push([
         ls.lineName,
-        ls.status === "running" ? "Em Producao" : ls.status === "stopped" ? "Parada" : ls.status === "cleaning" ? "Limpeza" : ls.status === "incident" ? "Incidencia" : "Manutencao",
+        ls.status === "running" ? "Em Produção" : ls.status === "stopped" ? "Parada" : ls.status === "cleaning" ? "Limpeza" : ls.status === "incident" ? "Incidencia" : "Manutenção",
         ls.productionHours.toString(),
         ls.cleaningHours.toString(),
         ls.stoppedHours.toString(),
@@ -328,7 +328,7 @@ export function FinalReportGenerator({
         rows.push(["Tempo Total Paragem (min)", totalMinutes.toString()])
         rows.push([])
         rows.push(["DETALHE PARAGENS"])
-        rows.push(["Linha", "Duracao (min)", "Categoria", "Motivo"])
+        rows.push(["Linha", "Duração (min)", "Categoria", "Motivo"])
         costDelivery.stoppages.forEach((s) => {
           rows.push([
             s.lineName,
@@ -434,7 +434,7 @@ export function FinalReportGenerator({
       printWindow.document.write(`
         <html>
           <head>
-            <title>Relatorio de Turno - ${date}</title>
+            <title>Relatório de Turno - ${date}</title>
             <style>
               body { font-family: monospace; white-space: pre-wrap; padding: 20px; }
             </style>
@@ -458,7 +458,7 @@ export function FinalReportGenerator({
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
           <FileText className="h-5 w-5 text-emerald-600" />
-          Relatorio Final de Turno
+          Relatório Final de Turno
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -466,7 +466,7 @@ export function FinalReportGenerator({
         <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/50 dark:to-emerald-900/30 p-4 rounded-lg space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Data do Relatorio</p>
+              <p className="text-sm text-muted-foreground">Data do Relatório</p>
               <p className="font-semibold">{new Date(date).toLocaleDateString("pt-PT", { weekday: "long", day: "numeric", month: "long" })}</p>
             </div>
             <Badge variant={hasIssues ? "destructive" : "default"} className="text-sm">
@@ -492,7 +492,7 @@ export function FinalReportGenerator({
                 <Gauge className="h-4 w-4 text-blue-600" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Aderencia</p>
+                <p className="text-xs text-muted-foreground">Aderência</p>
                 <p className="font-bold">{adherenceData.overallAdherence.toFixed(1)}%</p>
               </div>
             </div>
@@ -580,7 +580,7 @@ export function FinalReportGenerator({
           size="lg"
         >
           <Download className="h-5 w-5 mr-2" />
-          Gerar Relatorio Completo
+          Gerar Relatório Completo
         </Button>
       </CardContent>
     </Card>

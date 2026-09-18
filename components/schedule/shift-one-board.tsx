@@ -24,6 +24,7 @@ type ScheduleSnapshot = {
   lineRotationOffset?: number
   lockedColumns?: string[]
   lockedCells?: string[]
+  lunchMode?: "rotativo" | "fixo"
 }
 
 function dateLabel(date: string) {
@@ -82,6 +83,7 @@ export function ShiftOneBoard() {
   const [lockedColumns, setLockedColumns] = useState<Set<string>>(new Set())
   const [lockedCells, setLockedCells] = useState<Set<string>>(new Set())
   const [collapsedSnapshots, setCollapsedSnapshots] = useState<Set<string>>(new Set())
+  const [lunchMode, setLunchMode] = useState<"rotativo" | "fixo">("rotativo")
 
   useEffect(() => {
     let active = true
@@ -113,7 +115,7 @@ export function ShiftOneBoard() {
   const activeLines = useMemo(() => productionLines.filter((line) => line.isActive), [productionLines])
   const lineNames = useMemo(() => activeLines.map((line) => line.name), [activeLines])
   const selectablePosts = useMemo(() => Array.from(new Set(["Suporte", ...lineNames, ...workPositions, ...EXTRA_POSITIONS.map((position) => position.name)])), [lineNames, workPositions])
-  const lunchHours = ["12:00", "13:00", "14:00"]
+  const lunchHours = lunchMode === "fixo" ? ["13:00"] : ["12:00", "13:00", "14:00"]
 
   function selectValueForColumn(column: string) {
     const room = roomOf(assignments[column]?.[0] ?? positions[0] ?? "")
@@ -178,6 +180,31 @@ export function ShiftOneBoard() {
       })
     })
 
+    // Durante o almoço, se uma linha ficar abaixo do mínimo de operadores por causa
+    // de quem está a almoçar, reforça-se com colaboradores de Suporte que não estejam
+    // a almoçar nessa hora. Fora dessa hora, esse colaborador continua em Suporte.
+    const supportMembers = groups.get("Suporte") ?? []
+    const borrowedByHour = new Map<string, Map<string, string>>()
+    lunchHours.forEach((hour) => {
+      lineNeeds.forEach((line) => {
+        if (!line.needed) return
+        const members = groups.get(line.name) ?? []
+        if (!members.length) return
+        const onLunch = members.filter((name) => lunchAssignment[name] === hour).length
+        let shortfall = line.needed - (members.length - onLunch)
+        if (shortfall <= 0) return
+        const hourMap = borrowedByHour.get(hour) ?? new Map<string, string>()
+        borrowedByHour.set(hour, hourMap)
+        for (const supportName of supportMembers) {
+          if (shortfall <= 0) break
+          if (lunchAssignment[supportName] === hour) continue
+          if (hourMap.has(supportName)) continue
+          hourMap.set(supportName, line.name)
+          shortfall -= 1
+        }
+      })
+    })
+
     const next: Record<string, string[]> = {}
     sourceColumns.forEach((name) => {
       const room = columnToLine[name] || "Suporte"
@@ -188,6 +215,10 @@ export function ShiftOneBoard() {
         if (hour === "17:00") return "Limpeza"
         if (hour === "18:00") return "Saída"
         if (hour === lunch) return `Almoço (${lunch})`
+        if (room === "Suporte") {
+          const reinforceLine = borrowedByHour.get(hour)?.get(name)
+          if (reinforceLine) return reinforceLine
+        }
         return room
       })
     })
@@ -204,6 +235,7 @@ export function ShiftOneBoard() {
       lineRotationOffset: lineOffsetUsed,
       lockedColumns: Array.from(lockedColumns),
       lockedCells: Array.from(lockedCells),
+      lunchMode,
     }
     const nextHistory = [...history, snapshot]
     setAssignments(next)
@@ -243,6 +275,7 @@ export function ShiftOneBoard() {
     setActiveSnapshotId(snapshot.id)
     setLockedColumns(new Set(snapshot.lockedColumns ?? []))
     setLockedCells(new Set(snapshot.lockedCells ?? []))
+    setLunchMode(snapshot.lunchMode ?? "rotativo")
   }
 
   function updateCell(column: string, rowIndex: number, value: string) {
@@ -330,6 +363,7 @@ export function ShiftOneBoard() {
         <div className="flex flex-wrap items-end gap-2">
           <div className="grid gap-1"><Label htmlFor="schedule-date">Dia</Label><Input id="schedule-date" type="date" value={date} onChange={(event) => setDate(event.target.value)} className="h-9" /></div>
           <div className="grid gap-1"><Label htmlFor="shift-select">Turno</Label><Select value={shift} onValueChange={setShift}><SelectTrigger id="shift-select" className="h-9 w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="turno1">Turno 1 · 09–18</SelectItem></SelectContent></Select></div>
+          <div className="grid gap-1"><Label htmlFor="lunch-mode-select">Almoço</Label><Select value={lunchMode} onValueChange={(value) => setLunchMode(value as "rotativo" | "fixo")}><SelectTrigger id="lunch-mode-select" className="h-9 w-48"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="rotativo">Rotativo · 12h–14h</SelectItem><SelectItem value="fixo">Fixo · 13h00</SelectItem></SelectContent></Select></div>
           <Button variant="outline" onClick={generateFromWorkers} disabled={!workerNames.length}><UsersRound data-icon="inline-start" />Gerar trabalhadores</Button>
           <Button onClick={generateFromManual}><WandSparkles data-icon="inline-start" />Gerar manual</Button>
         </div>

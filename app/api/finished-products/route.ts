@@ -80,6 +80,19 @@ export async function PATCH(request: Request) {
     return NextResponse.json(edited)
   }
 
+  if (body.action === "rollback") {
+    let reverted: FinishedProduct
+    if (item.shippedAt) {
+      reverted = { ...item, shippedAt: undefined, shippedQuantity: undefined, shippedLot: undefined, shippedPalletNumber: undefined }
+    } else if (item.warehouseValidatedAt) {
+      reverted = { ...item, warehouseValidatedAt: undefined, warehouseValidatedBy: undefined }
+    } else {
+      return NextResponse.json({ error: "Não há nenhum estado para reverter." }, { status: 400 })
+    }
+    await setData(STORAGE_KEY, items.map((entry) => entry.id === id ? reverted : entry))
+    return NextResponse.json(reverted)
+  }
+
   const updated: FinishedProduct = body.action === "warehouse_validate"
     ? { ...item, warehouseValidatedAt: new Date().toISOString(), warehouseValidatedBy: String(body.validatedBy ?? "Armazém") }
     : body.action === "ship"

@@ -55,8 +55,8 @@ export function MonthlyTasksPage() {
   const days = useMemo(() => monthDays(month), [month])
 
   useEffect(() => { void Promise.all([
-    getSupabase().from("workers").select("id, name").order("name").then(({ data }) => setWorkers((data ?? []) as Worker[])),
-    getSupabase().from("vacation_requests").select("worker_id, start_date, end_date").eq("status", "approved").then(({ data }) => setVacations((data ?? []) as Vacation[])),
+    import("@/lib/storage").then(({ loadWorkers }) => loadWorkers()).then((data) => setWorkers((data ?? []).map((worker) => ({ id: worker.id, name: worker.name })))),
+    getSupabase().from("vacation_requests").select("worker_id, start_date, end_date").eq("status", "approved").then(({ data }: { data: Vacation[] | null }) => setVacations(data ?? [])).catch(() => setVacations([])),
     fetch(`/api/monthly-tasks?month=${month}`).then((response) => response.ok ? response.json() : null).then((data) => setPlan(data)),
   ]) }, [month])
 

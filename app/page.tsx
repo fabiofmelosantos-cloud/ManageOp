@@ -50,11 +50,9 @@ export default function DashboardPage() {
 
   const [productionLines, setProductionLines] = useState<any[]>([])
   const [weeklyLineCounts, setWeeklyLineCounts] = useState({ current: 0, next: 0 })
-  const [productionSummary, setProductionSummary] = useState<Array<{ sheet: string; rows: Record<string, unknown>[]; totalRows: number }>>([])
   const [productionInputs, setProductionInputs] = useState({ bags: "", bagWeight: "0.5", tubs: "", produced: "", lot: "", expiry: "", requested: "", palletQuantity: "", palletNumber: "", channel: "HQ" })
   const updateProductionInput = (field: keyof typeof productionInputs, value: string) => setProductionInputs((current) => ({ ...current, [field]: value }))
   const saveProductionInputs = async () => { if (!lineDetail) return; await fetch("/api/data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `production_line_${lineDetail.name.toLowerCase()}`, value: productionInputs }) }) }
-  const [productionSummaryError, setProductionSummaryError] = useState("")
   const [workerStats, setWorkerStats] = useState<any>({
     morning: { working: 0, absent: 0, dc: 0, vacation: 0 },
     afternoon: { working: 0, absent: 0, dc: 0, vacation: 0 },
@@ -68,12 +66,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadProductionData()
-    void fetch(`/api/production-summary?date=${visibleDate.toISOString().slice(0, 10)}`).then(async (response) => {
-      const payload = await response.json()
-      if (!response.ok) throw new Error(payload.error)
-      setProductionSummary(payload.summary ?? [])
-      setProductionSummaryError("")
-    }).catch((error) => setProductionSummaryError(error instanceof Error ? error.message : "Não foi possível ler a planilha."))
   }, [selectedDate])
 
   const loadProductionData = async () => {

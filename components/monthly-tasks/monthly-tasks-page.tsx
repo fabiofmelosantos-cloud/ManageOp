@@ -31,12 +31,12 @@ function isWorkingDay(date: Date) { return date.getDay() !== 0 && date.getDay() 
 function firstWorkingDay(days: Date[]) { return days.find(isWorkingDay) }
 // 0 = segunda ... 4 = sexta
 function weekdayIndex(date: Date) { return (date.getDay() + 6) % 7 }
-// Para tarefas "2x por semana", a segunda ocorrência fica sempre 3 dias úteis após a 1ª
-// (ex.: 1º dia escrito à terça => repete à sexta), respeitando o dia escolhido como início.
+// Para tarefas "2x por semana", a segunda ocorrência respeita um dia de intervalo
+// (ex.: 1º dia escrito à quarta => repete à sexta, com quinta como dia de intervalo).
 function isPeriodicDay(task: MonthlyTask, anchorDate: Date | undefined, day: Date) {
   if (task.frequency === "daily") return true
   const anchorIndex = anchorDate ? weekdayIndex(anchorDate) : 1
-  const secondIndex = (anchorIndex + 3) % 5
+  const secondIndex = (anchorIndex + 2) % 5
   const dayIndex = weekdayIndex(day)
   return dayIndex === anchorIndex || dayIndex === secondIndex
 }
@@ -62,49 +62,62 @@ export function MonthlyTasksPage() {
 
   const persist = async (assignments: Record<string, Record<string, string>>, lockedTasks = plan?.lockedTasks ?? {}, targetMonth = month) => {
     const response = await fetch("/api/monthly-tasks", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ month: targetMonth, tasks, assignments, lockedTasks, createdAt: new Date().toISOString() }) })
-    if (response.ok) setPlan(await response.json())
+    if (!response.ok) { window.alert("Não foi possível guardar a escala. Tente novamente."); return }
+    setPlan(await response.json())
   }
 
   const clearScale = async () => {
     if (!window.confirm(`Limpar a escala de ${monthLabel}? Esta ação remove os nomes e cadeados deste mês.`)) return
     setSaving(true)
-    const emptyAssignments = Object.fromEntries(tasks.map((task) => [task.id, {}]))
-    await persist(emptyAssignments, {})
-    setSaving(false)
+    try {
+      const emptyAssignments = Object.fromEntries(tasks.map((task) => [task.id, {}]))
+      await persist(emptyAssignments, {})
+    } catch (error) {
+      console.error("[v0] Falha ao limpar escala:", error)
+      window.alert("Não foi possível limpar a escala. Tente novamente.")
+    } finally {
+      setSaving(false)
+    }
   }
 
   const generate = async () => {
-    if (!workers.length) return
+    if (!workers.length || !generateMonth) return
     setSaving(true)
-    const assignments: Record<string, Record<string, string>> = {}
-    const targetDays = monthDays(generateMonth)
-    const lockedTasks = plan?.lockedTasks ?? {}
-    // Se o mês em edição já tiver nomes escritos manualmente para o mês a gerar,
-    // esse nome marca o primeiro dia da tarefa e a periodicidade é respeitada a partir dele.
-    const seedAssignments = plan?.month === generateMonth ? plan?.assignments ?? {} : {}
-    tasks.forEach((task, taskIndex) => {
-      assignments[task.id] = {}
-      const taskSeed = seedAssignments[task.id] ?? {}
-      const anchorDate = Object.keys(taskSeed).filter((date) => taskSeed[date]?.trim()).sort()[0]
-      const anchorName = anchorDate ? taskSeed[anchorDate].trim() : undefined
-      const anchorDay = anchorDate ? new Date(`${anchorDate}T12:00:00`) : undefined
-      targetDays.forEach((day, dayIndex) => {
-        if (!isWorkingDay(day)) return
-        const date = localDateKey(day)
-        if (!isPeriodicDay(task, anchorDay, day)) return
-        const lockedWorker = workers.find((worker) => worker.name === lockedTasks[task.id])
-        if (lockedWorker && !isOnVacation(vacations, lockedWorker, date)) { assignments[task.id][date] = lockedWorker.name; return }
-        if (anchorName && date >= anchorDate!) {
-          const anchorWorker = workers.find((worker) => worker.name.toLocaleLowerCase() === anchorName.toLocaleLowerCase())
-          if (!anchorWorker || !isOnVacation(vacations, anchorWorker, date)) { assignments[task.id][date] = anchorName; return }
-        }
-        const availableWorkers = workers.filter((worker) => !isOnVacation(vacations, worker, date))
-        if (availableWorkers.length) assignments[task.id][date] = availableWorkers[(taskIndex + dayIndex) % availableWorkers.length].name
+    try {
+      const assignments: Record<string, Record<string, string>> = {}
+      const targetDays = monthDays(generateMonth)
+      const lockedTasks = plan?.lockedTasks ?? {}
+      // Se o mês em edição já tiver nomes escritos manualmente para o mês a gerar,
+      // esse nome marca o primeiro dia da tarefa e a periodicidade é respeitada a partir dele.
+      const seedAssignments = plan?.month === generateMonth ? plan?.assignments ?? {} : {}
+      tasks.forEach((task, taskIndex) => {
+        assignments[task.id] = {}
+        const taskSeed = seedAssignments[task.id] ?? {}
+        const anchorDate = Object.keys(taskSeed).filter((date) => taskSeed[date]?.trim()).sort()[0]
+        const anchorName = anchorDate ? taskSeed[anchorDate].trim() : undefined
+        const anchorDay = anchorDate ? new Date(`${anchorDate}T12:00:00`) : undefined
+        targetDays.forEach((day, dayIndex) => {
+          if (!isWorkingDay(day)) return
+          const date = localDateKey(day)
+          if (!isPeriodicDay(task, anchorDay, day)) return
+          const lockedWorker = workers.find((worker) => worker.name === lockedTasks[task.id])
+          if (lockedWorker && !isOnVacation(vacations, lockedWorker, date)) { assignments[task.id][date] = lockedWorker.name; return }
+          if (anchorName && date >= anchorDate!) {
+            const anchorWorker = workers.find((worker) => worker.name.toLocaleLowerCase() === anchorName.toLocaleLowerCase())
+            if (!anchorWorker || !isOnVacation(vacations, anchorWorker, date)) { assignments[task.id][date] = anchorName; return }
+          }
+          const availableWorkers = workers.filter((worker) => !isOnVacation(vacations, worker, date))
+          if (availableWorkers.length) assignments[task.id][date] = availableWorkers[(taskIndex + dayIndex) % availableWorkers.length].name
+        })
       })
-    })
-    await persist(assignments, lockedTasks, generateMonth)
-    setSaving(false)
-    if (generateMonth !== month) setMonth(generateMonth)
+      await persist(assignments, lockedTasks, generateMonth)
+      if (generateMonth !== month) setMonth(generateMonth)
+    } catch (error) {
+      console.error("[v0] Falha ao gerar escala:", error)
+      window.alert("Não foi possível gerar a escala. Tente novamente.")
+    } finally {
+      setSaving(false)
+    }
   }
 
   const updateAssignment = async (taskId: string, date: string, value: string) => {
